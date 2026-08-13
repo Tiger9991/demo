@@ -1,0 +1,134 @@
+@inject IJSRuntime JSRuntime
+@using System.Text.Json
+
+<section class="page-content alerts-page" dir="rtl">
+    <!-- Top Header Area -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <h1 class="page-title mb-0">نظرة عامة على التنبيهات</h1>
+            <div class="status-badge">
+                <span class="status-pulse"></span>
+                <span>نشط الآن</span>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <div class="info-badge">
+                <span class="material-symbols-outlined text-muted" style="vertical-align: middle;">calendar_month</span>
+                <span style="font-size: 14px; font-weight: 600; color: #334155; margin-right: 4px;">آخر 30 يوم</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Row -->
+    <div class="row g-3 mb-4">
+        <!-- KPI 1 -->
+        <div class="col-md-4">
+            <div class="stitch-card position-relative overflow-hidden h-100" style="border-right: 4px solid #515f74 !important;">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <p class="text-slate-500 mb-0 fs-12 fw-semibold" style="color: #64748b;">التنبيهات النشطة</p>
+                    <span class="material-symbols-outlined text-muted" style="font-size: 20px;">sensors</span>
+                </div>
+                <h3 class="fw-bold mb-0 text-slate-800" style="font-size: 1.7rem; color: #0f172a;">14 تنبيه</h3>
+                <span class="fs-12 text-success mt-1 d-block">-2 تنبيهات عن الأمس</span>
+            </div>
+        </div>
+        <!-- KPI 2 -->
+        <div class="col-md-4">
+            <div class="stitch-card position-relative overflow-hidden h-100" style="border-right: 4px solid #003527 !important;">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <p class="text-slate-500 mb-0 fs-12 fw-semibold" style="color: #64748b;">متوسط وقت الاستجابة</p>
+                    <span class="material-symbols-outlined text-muted" style="font-size: 20px;">timer</span>
+                </div>
+                <h3 class="fw-bold mb-0 text-slate-800" style="font-size: 1.7rem; color: #0f172a;">22 دقيقة</h3>
+                <span class="fs-12 text-success mt-1 d-block">أسرع بـ 5 دقائق عن الأسبوع الماضي</span>
+            </div>
+        </div>
+        <!-- KPI 3 -->
+        <div class="col-md-4">
+            <div class="stitch-card position-relative overflow-hidden h-100" style="border-right: 4px solid #ba1a1a !important; background-color: #ffdad6 !important;">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <p class="text-slate-500 mb-0 fs-12 fw-semibold" style="color: #ba1a1a;">التنبيهات الحرجة</p>
+                    <span class="material-symbols-outlined text-danger" style="font-size: 20px;">warning</span>
+                </div>
+                <h3 class="fw-bold mb-0 text-danger" style="font-size: 1.7rem;">3 تنبيهات حيوية</h3>
+                <span class="fs-12 text-danger mt-1 d-block fw-bold">تتطلب اتخاذ إجراء فوري في الموقع</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="stitch-card mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">تصنيف التنبيهات ونسبها</h5>
+        </div>
+        <div id="alertsChart"></div>
+    </div>
+
+    <!-- Data Table Log -->
+    <div class="stitch-card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">سجل التنبيهات التفاعلي</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover text-right" style="direction: rtl;">
+                <thead>
+                    <tr style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                        <th class="py-2 px-3">معرف التنبيه</th>
+                        <th class="py-2 px-3">نوع التنبيه</th>
+                        <th class="py-2 px-3">الموقع / المصيدة</th>
+                        <th class="py-2 px-3">الوقت</th>
+                        <th class="py-2 px-3">الحالة</th>
+                        <th class="py-2 px-3">الفني المسند</th>
+                        <th class="py-2 px-3 text-left">الإجراء</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="align-middle" style="border-right: 3px solid #ba1a1a;">
+                        <td class="py-3 px-3 font-monospace fw-bold">ALT-8921</td>
+                        <td class="py-3 px-3 text-danger"><span class="material-symbols-outlined align-middle fs-16 ml-1">wifi_off</span> انقطاع الاتصال</td>
+                        <td class="py-3 px-3">القطاع الشمالي / TRP-04</td>
+                        <td class="py-3 px-3 font-monospace">10:42 AM</td>
+                        <td class="py-3 px-3"><span class="badge bg-danger">نشط</span></td>
+                        <td class="py-3 px-3 text-muted">غير مسند</td>
+                        <td class="py-3 px-3 text-left">
+                            <button class="btn btn-sm btn-details" style="font-size:12px; font-weight:600; border-radius:6px;">حل المشكلة</button>
+                        </td>
+                    </tr>
+                    <tr class="align-middle" style="border-right: 3px solid #003527;">
+                        <td class="py-3 px-3 font-monospace fw-bold">ALT-8920</td>
+                        <td class="py-3 px-3 text-success"><span class="material-symbols-outlined align-middle fs-16 ml-1">pest_control</span> صيد جديد</td>
+                        <td class="py-3 px-3">المنطقة الصناعية / TRP-12</td>
+                        <td class="py-3 px-3 font-monospace">09:15 AM</td>
+                        <td class="py-3 px-3"><span class="badge bg-success-subtle text-success border border-success">تم الحل</span></td>
+                        <td class="py-3 px-3">أحمد م.</td>
+                        <td class="py-3 px-3 text-left">
+                            <span class="text-muted fs-12 italic">مكتمل</span>
+                        </td>
+                    </tr>
+                    <tr class="align-middle" style="border-right: 3px solid #515f74;">
+                        <td class="py-3 px-3 font-monospace fw-bold">ALT-8919</td>
+                        <td class="py-3 px-3 text-secondary"><span class="material-symbols-outlined align-middle fs-16 ml-1">battery_2_bar</span> بطارية منخفضة</td>
+                        <td class="py-3 px-3">القطاع الغربي / TRP-01</td>
+                        <td class="py-3 px-3 font-monospace">08:30 AM</td>
+                        <td class="py-3 px-3"><span class="badge bg-warning-subtle text-warning border border-warning">نشط</span></td>
+                        <td class="py-3 px-3">طارق ن.</td>
+                        <td class="py-3 px-3 text-left">
+                            <button class="btn btn-sm btn-details" style="font-size:12px; font-weight:600; border-radius:6px;">حل المشكلة</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var values = JsonSerializer.Serialize(new[] { 45, 25, 15, 15 });
+            await JSRuntime.InvokeVoidAsync("renderAlertsClassificationChart", "alertsChart", values);
+        }
+    }
+}

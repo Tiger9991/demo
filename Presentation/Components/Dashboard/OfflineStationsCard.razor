@@ -1,0 +1,187 @@
+@using MediatR
+@using Application.Features.Traps.Queries
+@using Application.DTOs
+@inject IMediator Mediator
+@inject IJSRuntime JSRuntime
+
+<AnalyticsSummaryCard Title="محطات غير متصلة"
+                      Value="@Value"
+                      TotalFleet="20"
+                      BadgeText="10% انقطاع إشارة"
+                      Subtext="السبب المرجح: ضعف تغطية التردد / استنفاد الشحنة"
+                      ProgressPercentage="10"
+                      AccentColor="#EF4444"
+                      MdiIcon="wifi-off"
+                      ModalId="modal_offline_stations"
+                      OnSelected="@OpenModalAsync">
+    <!-- Modal (Unique Crimson Red Theme with Graphical Visualizations) -->
+    <div class="modal fade" id="modal_offline_stations" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <!-- Modal Header -->
+                <div class="modal-header border-bottom py-3 px-4" style="background-color: #FEF2F2; border-bottom: 2px solid #EF4444 !important;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="p-2.5 rounded-circle text-white shadow-sm d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background-color: #DC2626 !important;">
+                            <i class="mdi mdi-wifi-off fs-20"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title fw-bold mb-0 text-dark" style="color: #991B1B !important;">محطات غير متصلة (أعطال انقطاع الإشارة)</h5>
+                            <span class="fs-12 text-muted">تحليلات الأسباب المرجحة لانقطاع الاتصال وإجراءات إعادة التوصيل</span>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 me-auto ms-0">
+                        <span class="badge bg-danger text-white px-3 py-1.5 rounded-pill fs-12 fw-bold shadow-sm">
+                            @Value محطات مفصولة
+                        </span>
+                        <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="modal-body p-4" dir="rtl">
+                    
+                    <!-- GRAPHICAL VISUALIZATIONS SECTION (الرسم البياني لأسباب انقطاع الاتصال) -->
+                    <div class="row g-3 mb-4">
+                        <!-- Chart 1: Disconnect Reason Breakdown Visual Bars -->
+                        <div class="col-md-7">
+                            <div class="p-3 rounded-3 border bg-white shadow-sm h-100">
+                                <h6 class="fw-bold text-dark mb-3 fs-13 d-flex align-items-center gap-2">
+                                    <i class="mdi mdi-chart-pie text-danger fs-16"></i>
+                                    <span>تصنيف أسباب انقطاع الاتصال المرجحة (Disconnect Fault Categorization)</span>
+                                </h6>
+                                <div class="d-flex flex-column gap-2.5">
+                                    <div>
+                                        <div class="d-flex justify-content-between fs-12 fw-semibold mb-1">
+                                            <span>ضعف تغطية التردد / العوائق (Signal Attenuation)</span>
+                                            <span class="text-danger fw-bold">50% (1 محطة)</span>
+                                        </div>
+                                        <div class="progress" style="height: 8px; border-radius: 4px;">
+                                            <div class="progress-bar bg-danger" style="width: 50%;"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="d-flex justify-content-between fs-12 fw-semibold mb-1">
+                                            <span>استنفاد شحنة البطارية (Battery Exhaustion)</span>
+                                            <span class="text-warning fw-bold">50% (1 محطة)</span>
+                                        </div>
+                                        <div class="progress" style="height: 8px; border-radius: 4px;">
+                                            <div class="progress-bar bg-warning" style="width: 50%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Chart 2: Troubleshooting Recommendation Summary -->
+                        <div class="col-md-5">
+                            <div class="p-3 rounded-3 border bg-white shadow-sm h-100 d-flex flex-column justify-content-between">
+                                <h6 class="fw-bold text-dark mb-2 fs-13 d-flex align-items-center gap-2">
+                                    <i class="mdi mdi-wrench text-danger fs-16"></i>
+                                    <span>خطوات التشخيص الفني المقترحة</span>
+                                </h6>
+                                <div class="vstack gap-2 my-auto">
+                                    <div class="p-2 rounded-2 bg-light border fs-12 d-flex align-items-center gap-2">
+                                        <i class="mdi mdi-numeric-1-circle text-danger fs-16"></i>
+                                        <span>فحص مسافة المحطة عن أقرب بوابة LoRaWAN</span>
+                                    </div>
+                                    <div class="p-2 rounded-2 bg-light border fs-12 d-flex align-items-center gap-2">
+                                        <i class="mdi mdi-numeric-2-circle text-danger fs-16"></i>
+                                        <span>قياس جهد البطارية بالملتيمتر الميداني</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DATA TABLE SECTION (الجدول التفصيلي) -->
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h6 class="fw-bold text-dark mb-0 fs-14">جدول تفاصيل المحطات الغير متصلة</h6>
+                    </div>
+
+                    @if (_modalRows == null)
+                    {
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-danger" role="status">
+                                <span class="visually-hidden">جاري التحميل...</span>
+                            </div>
+                        </div>
+                    }
+                    else if (_modalRows.Count == 0)
+                    {
+                        <div class="text-center py-5">
+                            <i class="mdi mdi-check-circle-outline text-success fs-1 mb-3 d-block" style="font-size: 3rem;"></i>
+                            <p class="text-muted mb-0 fs-16 fw-semibold">جميع محطات الشبكة متصلة بنجاح</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive rounded-3 border">
+                            <table class="table table-hover align-middle mb-0 text-center">
+                                <thead style="background-color: #FEE2E2;" class="text-dark">
+                                    <tr>
+                                        <th class="py-3">م</th>
+                                        <th class="py-3">المجموعة</th>
+                                        <th class="py-3">رقم المحطة</th>
+                                        <th class="py-3">سبب الانقطاع المرجح</th>
+                                        <th class="py-3">الإجراء المطلوب</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (int rowIndex = 0; rowIndex < _modalRows.Count; rowIndex++)
+                                    {
+                                        var row = _modalRows[rowIndex];
+                                        var reason = string.IsNullOrEmpty(row.DisconnectReason) ? "انقطاع إشارة التردد" : row.DisconnectReason;
+                                        <tr>
+                                            <td class="fw-bold text-muted">@(rowIndex + 1)</td>
+                                            <td><span class="badge bg-light text-dark border px-2.5 py-1">مجموعة @row.TrapGroup</span></td>
+                                            <td><span class="fw-bold text-dark fs-14">#@row.TrapNumber</span></td>
+                                            <td>
+                                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1 fs-12 fw-bold">
+                                                    <i class="mdi mdi-alert-circle-outline me-1"></i>@reason
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <button type="button" class="btn btn-sm btn-outline-danger py-1 px-3 fs-12 fw-bold rounded-2">
+                                                    إعادة مزامنة الإشارة
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</AnalyticsSummaryCard>
+
+@code {
+    [Parameter] public int Value { get; set; }
+    private List<TrapDto>? _modalRows;
+
+    protected override void OnInitialized()
+    {
+        _ = FetchDataAsync();
+    }
+
+    private async Task FetchDataAsync()
+    {
+        if (_modalRows == null)
+        {
+            _modalRows = await Mediator.Send(new GetActiveTrapsByGroupQuery(Status: "Inactive"));
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task OpenModalAsync(string? modalId)
+    {
+        // Open Modal instantly on click (0ms delay)
+        await JSRuntime.InvokeVoidAsync("openAnalyticsModal", modalId, string.Empty);
+        if (_modalRows == null)
+        {
+            await FetchDataAsync();
+        }
+    }
+}

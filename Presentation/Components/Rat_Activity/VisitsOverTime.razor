@@ -1,0 +1,103 @@
+@using ApexCharts
+@using Application.DTOs
+@using Application.Features.Stats.Queries
+@using Application.Features.Traps.Queries
+@inject MediatR.IMediator Mediator
+@inject IJSRuntime JSRuntime
+
+
+<div class="visits-over-time h-100 d-flex flex-column justify-between">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="font-headline-sm text-headline-sm mb-0">الزيارات اليومية</h3>
+        <div class="d-flex gap-2">
+            <button class="px-3 py-1 rounded-lg bg-primary-light text-primary text-xs font-bold border-0">رسم بياني</button>
+            <button class="px-3 py-1 rounded-lg text-slate-400 text-xs font-medium hover:bg-slate-50 border-0">جدول</button>
+        </div>
+    </div>
+
+    <div class="flex-1 w-full position-relative">
+        @if (_isLoading)
+        {
+            <div class="d-flex align-items-center justify-content-center h-100 py-5">
+                <div class="spinner-border text-primary"></div>
+            </div>
+        }
+        else if (_data == null || !_data.Any())
+        {
+            <div class="alert alert-info border-0 rounded-xl bg-slate-50 text-center py-4">لا توجد بيانات.</div>
+        }
+        else
+        {
+            <ApexChart TItem="DailyVisitDto"
+                       Height="280"
+                       Options="_chartOptions">
+                <ApexPointSeries TItem="DailyVisitDto"
+                                 Items="@_data"
+                                 SeriesType="SeriesType.Line"
+                                 Name="الزيارات"
+                                 XValue='e => e.Date.ToString("dd/MM")'
+                                 YValue="e => e.Count" />
+            </ApexChart>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Group { get; set; } = "";
+
+    private List<DailyVisitDto> _data = new();
+    private string _selectedGroup = "";
+    private bool _isLoading = false;
+
+    private ApexChartOptions<DailyVisitDto> _chartOptions = new()
+    {
+        Chart = new Chart
+        {
+            Toolbar = new Toolbar { Show = false },
+            Background = "transparent"
+        },
+        Stroke = new Stroke { Curve = Curve.Smooth, Width = 3 },
+        Colors = new List<string> { "#2563eb" }, // Elegant Blue
+        Grid = new Grid
+        {
+            Show = true,
+            BorderColor = "#f1f5f9",
+            StrokeDashArray = 4
+        },
+        Xaxis = new XAxis
+        {
+            Labels = new XAxisLabels { Rotate = -45, Style = new AxisLabelStyle { Colors = "#64748b", FontSize = "11px" } },
+            AxisBorder = new AxisBorder { Show = false },
+            AxisTicks = new AxisTicks { Show = false }
+        },
+        Yaxis = new List<YAxis> 
+        { 
+            new YAxis 
+            { 
+                Min = 0,
+                Labels = new YAxisLabels { Style = new AxisLabelStyle { Colors = "#64748b", FontSize = "11px" } }
+            } 
+        }
+    };
+
+    private async Task LoadData()
+    {
+        _isLoading = true;
+        StateHasChanged();
+
+        _data = await Mediator.Send(new GetDailyVisitsQuery(
+            GroupNumber: string.IsNullOrEmpty(_selectedGroup) ? null : _selectedGroup,
+            Days: 30
+        ));
+
+        _isLoading = false;
+        StateHasChanged();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _selectedGroup = Group;
+        await LoadData();
+    }
+}

@@ -1,0 +1,61 @@
+@using Application.DTOs
+@using Application.Features.Stats.Queries
+@using Application.Features.Traps.Queries
+
+@inject MediatR.IMediator Mediator
+@inject IJSRuntime JSRuntime
+
+
+<div class="stitch-card">
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+            <p class="text-slate-500 mb-1 fs-12 font-semibold">متوسط الزيارات اليومية</p>
+            <h3 class="fw-bold mb-0 text-secondary font-outfit text-headline-lg">@(_summary?.Average.ToString("N1") ?? "0.0")</h3>
+        </div>
+        <div class="w-10 h-10 rounded-lg bg-secondary-light d-flex align-items-center justify-center">
+            <span class="material-symbols-outlined text-secondary">trending_up</span>
+        </div>
+    </div>
+    <div class="d-flex align-items-center gap-1 text-secondary mb-3 fs-12 font-bold">
+        <span class="material-symbols-outlined text-sm">north_east</span>
+        <span>@_summary?.Message</span>
+    </div>
+    <button class="w-100 btn-details transition-colors" data-bs-toggle="modal" data-bs-target="#dailyVisitsModal">عرض التفاصيل</button>
+</div>
+
+<!-- Modal -->
+<div class="modal fade text-dark" id="dailyVisitsModal" tabindex="-1" data-group="@Group">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-xl">
+            <div class="modal-header border-bottom border-slate-100">
+                <h5 class="modal-title fw-bold">تفاصيل الزيارات اليومية</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="dailyVisitsModalBody">
+                <p>جاري تحميل البيانات...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Group { get; set; } = "";
+
+    private AverageDailyVisitsSummaryDto? _summary;
+    private string _selectedGroup = "";
+
+    private async Task LoadData()
+    {
+        _summary = await Mediator.Send(new GetAverageDailyVisitsSummaryQuery(
+            string.IsNullOrEmpty(_selectedGroup) ? null : _selectedGroup
+        ));
+        StateHasChanged();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _selectedGroup = Group;
+        await LoadData();
+    }
+}

@@ -1,0 +1,144 @@
+@inject IJSRuntime JSRuntime
+@using System.Text.Json
+
+<section class="page-content bait-consumption-page" dir="rtl">
+    <!-- Top Header Area -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <h1 class="page-title mb-0">استهلاك الطعوم (Bait Consumption)</h1>
+            <div class="status-badge">
+                <span class="status-pulse"></span>
+                <span>نشط الآن</span>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <div class="info-badge">
+                <span class="material-symbols-outlined text-muted" style="vertical-align: middle;">calendar_month</span>
+                <span style="font-size: 14px; font-weight: 600; color: #334155; margin-right: 4px;">آخر 30 يوم</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Row -->
+    <div class="row g-3 mb-4">
+        <!-- KPI 1 -->
+        <div class="col-md-4">
+            <div class="stitch-card position-relative overflow-hidden h-100" style="border-right: 4px solid #10b981 !important;">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <p class="text-slate-500 mb-0 fs-12 fw-semibold" style="color: #64748b;">إجمالي الطعوم المستهلكة</p>
+                    <span class="material-symbols-outlined text-muted" style="font-size: 20px;">restaurant</span>
+                </div>
+                <h3 class="fw-bold mb-0 text-slate-800" style="font-size: 1.7rem; color: #0f172a;">12.4 كجم</h3>
+                <span class="fs-12 text-success mt-1 d-block">خلال الشهر الحالي</span>
+            </div>
+        </div>
+        <!-- KPI 2 -->
+        <div class="col-md-4">
+            <div class="stitch-card position-relative overflow-hidden h-100" style="border-right: 4px solid #3b82f6 !important;">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <p class="text-slate-500 mb-0 fs-12 fw-semibold" style="color: #64748b;">معدل الاستهلاك اليومي</p>
+                    <span class="material-symbols-outlined text-muted" style="font-size: 20px;">restaurant_menu</span>
+                </div>
+                <h3 class="fw-bold mb-0 text-slate-800" style="font-size: 1.7rem; color: #0f172a;">410 جرام / يوم</h3>
+                <span class="fs-12 text-muted mt-1 d-block">متوسط لكل مصيدة</span>
+            </div>
+        </div>
+        <!-- KPI 3 -->
+        <div class="col-md-4">
+            <div class="stitch-card position-relative overflow-hidden h-100" style="border-right: 4px solid #dc3545 !important;">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <p class="text-slate-500 mb-0 fs-12 fw-semibold" style="color: #64748b;">مصائد تحتاج إعادة تعبئة</p>
+                    <span class="material-symbols-outlined text-muted" style="font-size: 20px;">battery_alert</span>
+                </div>
+                <h3 class="fw-bold mb-0 text-slate-800" style="font-size: 1.7rem; color: #0f172a;">12 مصيدة</h3>
+                <span class="fs-12 text-danger mt-1 d-block">الوزن المتبقي أقل من 10%</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="stitch-card mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">تأثير الطعوم: الاستهلاك مقابل عدد الزيارات</h5>
+        </div>
+        <div id="baitDualChart"></div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="stitch-card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">حالة الطعوم التفصيلية في المصائد</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover text-right" style="direction: rtl;">
+                <thead>
+                    <tr style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                        <th class="py-2 px-3">رقم المصيدة</th>
+                        <th class="py-2 px-3">المجموعة</th>
+                        <th class="py-2 px-3">آخر وزن مسجل للطعوم</th>
+                        <th class="py-2 px-3">نسبة الاستهلاك</th>
+                        <th class="py-2 px-3">آخر تحديث</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="align-middle">
+                        <td class="py-3 px-3 font-monospace">TRP-042</td>
+                        <td class="py-3 px-3">المجموعة أ</td>
+                        <td class="py-3 px-3">25g</td>
+                        <td class="py-3 px-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-grow-1" style="height: 6px;">
+                                    <div class="progress-bar bg-danger" style="width: 90%;"></div>
+                                </div>
+                                <span class="fw-bold text-danger">90%</span>
+                            </div>
+                        </td>
+                        <td class="py-3 px-3 text-muted">منذ ساعتين</td>
+                    </tr>
+                    <tr class="align-middle">
+                        <td class="py-3 px-3 font-monospace">TRP-118</td>
+                        <td class="py-3 px-3">المجموعة ب</td>
+                        <td class="py-3 px-3">120g</td>
+                        <td class="py-3 px-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-grow-1" style="height: 6px;">
+                                    <div class="progress-bar bg-warning" style="width: 52%;"></div>
+                                </div>
+                                <span class="fw-bold text-warning">52%</span>
+                            </div>
+                        </td>
+                        <td class="py-3 px-3 text-muted">منذ 5 ساعات</td>
+                    </tr>
+                    <tr class="align-middle">
+                        <td class="py-3 px-3 font-monospace">TRP-005</td>
+                        <td class="py-3 px-3">المجموعة أ</td>
+                        <td class="py-3 px-3">210g</td>
+                        <td class="py-3 px-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-grow-1" style="height: 6px;">
+                                    <div class="progress-bar bg-success" style="width: 15%;"></div>
+                                </div>
+                                <span class="fw-bold text-success">15%</span>
+                            </div>
+                        </td>
+                        <td class="py-3 px-3 text-muted">منذ يومين</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var categories = JsonSerializer.Serialize(new[] { "مصيدة 1", "مصيدة 2", "مصيدة 3", "مصيدة 4", "مصيدة 5" });
+            var consumed = JsonSerializer.Serialize(new[] { 320, 150, 420, 90, 210 });
+            var visits = JsonSerializer.Serialize(new[] { 18, 12, 24, 6, 14 });
+
+            await JSRuntime.InvokeVoidAsync("renderBaitConsumptionDualChart", "baitDualChart", categories, consumed, visits);
+        }
+    }
+}

@@ -1,0 +1,146 @@
+@using MediatR
+@using Application.Features.Stats.Queries
+@using Application.DTOs
+@using Domain.Enums
+
+<div class="card border border-light-subtle shadow-sm rounded-4 bg-white p-3.5 h-100" dir="rtl">
+    
+    <!-- Executive Section Header -->
+    <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2.5">
+        <div class="d-flex align-items-center gap-2">
+            <div class="p-1.5 rounded-3 bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 34px; height: 34px;">
+                <i class="mdi mdi-chart-donut-variant fs-18" style="color: #1B365D !important;"></i>
+            </div>
+            <div>
+                <h6 class="fw-extrabold mb-0 text-dark" style="color: #1B365D !important; font-size: 1.05rem;">توزيع أنواع القوارض المرصودة</h6>
+                <span class="fs-11 text-muted fw-medium">التصنيف الإحصائي للفصائل المكتشفة بالمحطات الذكية</span>
+            </div>
+        </div>
+        <span class="badge bg-light text-muted border px-2.5 py-1 fs-10 fw-semibold rounded-pill">
+            4 فصائل رئيسية
+        </span>
+    </div>
+    
+    @if (Data != null && Data.Any())
+    {
+        var totalCount = Data.Sum(d => d.Count);
+        
+        <!-- Total Rodents Metric Banner Card -->
+        <div class="p-3 mb-3 rounded-3 text-white shadow-2xs position-relative overflow-hidden" 
+             style="background: linear-gradient(135deg, #1B365D 0%, #0F172A 100%); border-top: 3px solid #B89764 !important;">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-white-50 fs-11 fw-bold d-block mb-1">إجمالي الكشوفات والإلتقاطات المرصودة</span>
+                    <div class="d-flex align-items-baseline gap-2">
+                        <h2 class="fw-extrabold text-white mb-0 fs-1" style="line-height: 1;">@totalCount</h2>
+                        <span class="fs-12 text-warning fw-bold" style="color: #E2B96F !important;">قارضاً مرصوداً</span>
+                    </div>
+                </div>
+                <div class="avatar-sm rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="background: rgba(255, 255, 255, 0.12); width: 46px; height: 46px;">
+                    <i class="mdi mdi-radar fs-24 text-warning" style="color: #E2B96F !important;"></i>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Species Distribution Breakdown Items -->
+    <div class="vstack gap-3 flex-grow-1 justify-content-center">
+        @if (Data == null)
+        {
+            <div class="text-center py-4">
+                <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                <p class="text-muted fs-12 mt-2 mb-0">جاري تحميل توزيع الفصائل...</p>
+            </div>
+        }
+        else if (!Data.Any())
+        {
+            <div class="text-center py-4">
+                <p class="text-muted fs-12 mb-0">لا توجد بيانات قوارض مرصودة</p>
+            </div>
+        }
+        else
+        {
+            @foreach (var item in Data)
+            {
+                var speciesTheme = GetSpeciesTheme(item.RodentType);
+                var parsedType = Domain.Extensions.RodentTypeExtensions.ParseFromString(item.RodentType);
+                var displayName = parsedType.HasValue ? parsedType.Value.GetDisplayName() : item.RodentType;
+                var subTitle = GetSpeciesSubtitle(item.RodentType);
+
+                <div class="p-2.5 rounded-3 border bg-light-subtle transition-all hover-elevation">
+                    <div class="d-flex align-items-center justify-content-between mb-1.5">
+                        <div class="d-flex align-items-center gap-2.5">
+                            <div class="avatar-xs rounded-circle border p-0.5 bg-white d-flex align-items-center justify-content-center overflow-hidden" style="width: 36px; height: 36px; border-color: @speciesTheme.Color !important;">
+                                <img src="@GetRodentIconPath(item.RodentType)" alt="@displayName" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" />
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-0 text-dark fs-13">@displayName</h6>
+                                <span class="fs-10 text-muted d-block">@subTitle</span>
+                            </div>
+                        </div>
+
+                        <div class="text-start">
+                            <span class="badge rounded-pill px-2.5 py-1 fs-11 fw-bold" style="background-color: @speciesTheme.BgColor; color: @speciesTheme.Color;">
+                                @item.Count تكرار (@item.Percentage%)
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Visual Progress Bar -->
+                    <div class="progress rounded-pill bg-secondary-subtle overflow-hidden" style="height: 7px;">
+                        <div class="progress-bar rounded-pill" 
+                             role="progressbar" 
+                             style="width: @(item.Percentage)%; background-color: @speciesTheme.Color; box-shadow: 0 0 6px @speciesTheme.Color;" 
+                             aria-valuenow="@item.Percentage" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<RodentTypeDistributionDto> Data { get; set; } = new();
+
+    private string GetRodentIconPath(string rodentType)
+    {
+        var parsed = Domain.Extensions.RodentTypeExtensions.ParseFromString(rodentType) ?? RodentType.Unknown;
+        return parsed switch
+        {
+            RodentType.NormalRat => "/assets/images/house_mouse.jpg",
+            RodentType.ClimbingRat => "/assets/images/climbing_rat.jpg",
+            RodentType.NorwegianRat => "/assets/images/norwegian_rat.jpg",
+            RodentType.Unknown => "/assets/images/unknown_rodent.jpg",
+            _ => "/assets/images/unknown_rodent.jpg"
+        };
+    }
+
+    private string GetSpeciesSubtitle(string rodentType)
+    {
+        var parsed = Domain.Extensions.RodentTypeExtensions.ParseFromString(rodentType) ?? RodentType.Unknown;
+        return parsed switch
+        {
+            RodentType.NorwegianRat => "Rattus norvegicus • الجرذ النرويجي",
+            RodentType.NormalRat => "Mus musculus • الفأر المنزلي الشائع",
+            RodentType.ClimbingRat => "Rattus rattus • الجرذ المتسلق/الأسطح",
+            _ => "غير محدد التكويت التشخيصي"
+        };
+    }
+
+    private SpeciesTheme GetSpeciesTheme(string rodentType)
+    {
+        var parsed = Domain.Extensions.RodentTypeExtensions.ParseFromString(rodentType) ?? RodentType.Unknown;
+        return parsed switch
+        {
+            RodentType.NorwegianRat => new("#EF4444", "#FEF2F2"), // Red
+            RodentType.NormalRat => new("#F59E0B", "#FFFBEB"),    // Amber
+            RodentType.ClimbingRat => new("#6366F1", "#EEF2FF"),  // Indigo
+            _ => new("#06B6D4", "#ECFEFF")                         // Cyan
+        };
+    }
+
+    private sealed record SpeciesTheme(string Color, string BgColor);
+}

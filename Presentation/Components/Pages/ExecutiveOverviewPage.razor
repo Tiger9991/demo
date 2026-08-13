@@ -1,0 +1,245 @@
+@page "/executive-overview"
+@using MediatR
+@using Application.Features.Stats.Queries
+@using Application.Features.Traps.Queries
+@using Application.DTOs
+@inject IMediator Mediator
+@inject IJSRuntime JSRuntime
+
+<PageTitle>النظرة التنفيذية</PageTitle>
+
+<div class="container-fluid py-3 px-4" dir="rtl" style="background-color: #f8fafc; min-height: 100vh; font-family: 'Inter', Outfit, sans-serif;">
+
+    <!-- Top Section: Map & Live Alerts + 6 KPI Cards -->
+    <div class="row g-3 mb-3">
+        
+        <!-- Left Side (in RTL): Live Response & Map Container -->
+        <div class="col-lg-6">
+            <div class="stitch-card position-relative overflow-hidden p-0 shadow-sm rounded-3 bg-white" style="height: 440px;">
+                
+                <!-- Interactive Map Area -->
+                <div id="executiveOverviewMap" class="w-100 h-100 position-absolute top-0 start-0" style="background: #e2e8f0; z-index: 1;">
+                    <DashboardMap Groups="@_groups" InitialData="@_mapData" />
+                </div>
+
+                <!-- Floating Live Alerts Panel (Overlay on Left Side of Map) -->
+                <div class="position-absolute top-0 start-0 m-3 shadow-lg rounded-3 overflow-hidden bg-white border" style="width: 210px; z-index: 2; max-height: calc(100% - 24px);">
+                    <!-- Dark Header -->
+                    <div class="p-3 text-white" style="background-color: #1e293b;">
+                        <div class="fw-bold fs-13">الاستجابة المباشرة</div>
+                        <div class="fs-10 text-white-50">التحديث التلقائي: الآن</div>
+                    </div>
+
+                    <!-- Alerts List -->
+                    <div class="p-2 d-flex flex-column gap-2 overflow-auto" style="max-height: 320px;">
+                        <!-- Alert 1 -->
+                        <div class="p-2 rounded-2 border border-danger-subtle bg-danger-subtle bg-opacity-10">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="badge bg-danger text-white px-2 py-1 fs-10 fw-normal">عاجل</span>
+                                <span class="text-muted fs-11">14:22</span>
+                            </div>
+                            <div class="fw-bold text-dark fs-12 mb-1">محطة #42-B</div>
+                            <div class="text-muted fs-11">نشاط غير معتاد في المستودع الجنوبي</div>
+                        </div>
+
+                        <!-- Alert 2 -->
+                        <div class="p-2 rounded-2 border border-warning-subtle bg-warning-subtle bg-opacity-10">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="badge bg-warning text-dark px-2 py-1 fs-10 fw-normal">صيانة</span>
+                                <span class="text-muted fs-11">13:05</span>
+                            </div>
+                            <div class="fw-bold text-dark fs-12 mb-1">محطة #18-A</div>
+                            <div class="text-muted fs-11">استهلاك 95% من الطعم</div>
+                        </div>
+                    </div>
+
+                    <!-- Footer Link -->
+                    <div class="p-2 text-center border-top bg-light">
+                        <a href="javascript:void(0)" class="text-primary text-decoration-none fw-semibold fs-12">كافة التنبيهات</a>
+                    </div>
+                </div>
+
+                <!-- Zoom Controls (Top Right) -->
+                <div class="position-absolute top-0 end-0 m-3 d-flex flex-column gap-1" style="z-index: 3;">
+                    <button class="btn btn-white shadow-sm border p-0 d-flex justify-content-center align-items-center" style="width: 32px; height: 32px; font-weight: bold; background: white;">+</button>
+                    <button class="btn btn-white shadow-sm border p-0 d-flex justify-content-center align-items-center" style="width: 32px; height: 32px; font-weight: bold; background: white;">-</button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Right Side (in RTL): 6 KPI Cards Grid -->
+        <div class="col-lg-6">
+            <div class="row g-3">
+                <!-- Card 1: Total Network Stations -->
+                <div class="col-6">
+                    <div class="stitch-card p-3 bg-white rounded-3 shadow-sm d-flex flex-column justify-content-between" style="height: 135px;">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-secondary fw-semibold fs-12">إجمالي المحطات</span>
+                            <div class="p-2 rounded-2 bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                <i class="mdi mdi-hub fs-18"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="fw-bold fs-22 text-dark">20 <span class="fs-12 fw-normal text-muted">محطة</span></div>
+                            <div class="text-success fs-12 fw-bold d-flex align-items-center gap-1 mt-1">
+                                <span>5.2%+</span>
+                                <svg width="40" height="15" viewBox="0 0 40 15"><path d="M0,12 Q10,14 20,6 T40,2" fill="none" stroke="#10b981" stroke-width="2" /></svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Connected Stations -->
+                <div class="col-6">
+                    <div class="stitch-card p-3 bg-white rounded-3 shadow-sm d-flex flex-column justify-content-between" style="height: 135px;">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-secondary fw-semibold fs-12">المحطات المتصلة</span>
+                            <div class="p-2 rounded-2 bg-success bg-opacity-10 text-success d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                <i class="mdi mdi-wifi fs-18"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="fw-bold fs-22 text-dark">18 <span class="fs-12 fw-normal text-muted">محطة</span></div>
+                            <div class="text-success fs-12 fw-semibold d-flex align-items-center gap-1 mt-1">
+                                <i class="mdi mdi-check-circle fs-14"></i>
+                                <span>90% نشط</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3: Offline Stations -->
+                <div class="col-6">
+                    <div class="stitch-card p-3 bg-white rounded-3 shadow-sm d-flex flex-column justify-content-between" style="height: 135px;">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-secondary fw-semibold fs-12">المحطات غير المتصلة</span>
+                            <div class="p-2 rounded-2 bg-danger bg-opacity-10 text-danger d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                <i class="mdi mdi-wifi-off fs-18"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="fw-bold fs-22 text-dark">2 <span class="fs-12 fw-normal text-muted">محطة</span></div>
+                            <div class="text-danger fs-12 fw-bold d-flex align-items-center gap-1 mt-1">
+                                <span>1.0%-</span>
+                                <svg width="40" height="15" viewBox="0 0 40 15"><path d="M0,2 Q10,4 20,10 T40,14" fill="none" stroke="#ef4444" stroke-width="2" /></svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 4: Active Today -->
+                <div class="col-6">
+                    <div class="stitch-card p-3 bg-white rounded-3 shadow-sm d-flex flex-column justify-content-between" style="height: 135px;">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-secondary fw-semibold fs-12">محطات نشطة اليوم</span>
+                            <div class="p-2 rounded-2 bg-info bg-opacity-10 text-info d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                <i class="mdi mdi-flash fs-18"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="fw-bold fs-22 text-dark">0 <span class="fs-12 fw-normal text-muted">محطة</span></div>
+                            <div class="text-muted fs-12 fw-semibold d-flex align-items-center gap-1 mt-1">
+                                <span>0%</span>
+                                <span class="fs-14">→</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 5: Low Battery -->
+                <div class="col-6">
+                    <div class="stitch-card p-3 bg-white rounded-3 shadow-sm d-flex flex-column justify-content-between" style="height: 135px;">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-secondary fw-semibold fs-12">بطارية ضعيفة</span>
+                            <div class="p-2 rounded-2 bg-warning bg-opacity-10 text-warning d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                <i class="mdi mdi-battery-alert fs-18"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="fw-bold fs-22 text-dark">8 <span class="fs-12 fw-normal text-muted">محطة</span></div>
+                            <div class="text-warning fs-12 fw-semibold d-flex align-items-center gap-1 mt-1">
+                                <i class="mdi mdi-wrench fs-14"></i>
+                                <span>تحتاج صيانة</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 6: Rodent Activity -->
+                <div class="col-6">
+                    <div class="stitch-card p-3 bg-white rounded-3 shadow-sm d-flex flex-column justify-content-between" style="height: 135px;">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-secondary fw-semibold fs-12">نشاط القوارض</span>
+                            <div class="p-2 rounded-2 bg-purple bg-opacity-10 text-purple d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                <i class="mdi mdi-chart-line fs-18"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="fw-bold fs-22 text-dark">18 <span class="fs-12 fw-normal text-muted">رصد</span></div>
+                            <div class="text-success fs-12 fw-semibold d-flex align-items-center gap-1 mt-1">
+                                <i class="mdi mdi-trending-neutral fs-14"></i>
+                                <span>مستقر</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Middle Section: Species Distribution & Infestation Gauge -->
+    <div class="row g-3 mb-3">
+        
+        <!-- Left Side (in RTL): Species Distribution ("تحليل الأنواع المرصودة") -->
+        <div class="col-lg-6">
+            <SpeciesDistribution Data="@_speciesDistribution" />
+        </div>
+
+        <!-- Right Side (in RTL): Infestation Gauge ("مؤشر الإصابة") -->
+        <div class="col-lg-6">
+            <IntensityIndex Percentage="@_intensityPercentage" />
+
+                <!-- Radial SVG Gauge (Matching exact arc design from screenshot) -->
+                
+
+                <!-- Footer Badge -->
+                
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Bottom Section: Infestation Timeline Chart ("معدل الاستهلاك مقابل التعبئة") -->
+    <div class="row g-3">
+    <FoodConsumptionVisits />
+    </div>
+
+
+
+@code {
+    private List<string> _groups = new();
+    private List<TrapDetailDto> _mapData = new();
+    private List<RodentTypeDistributionDto> _speciesDistribution = new();
+    private double _intensityPercentage;
+    private string ActiveTimeframe { get; set; } = "daily";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _groups = await Mediator.Send(new GetDistinctGroupNumbersQuery());
+        _mapData = await Mediator.Send(new GetTrapsMapDataQuery(null));
+
+        var severityResult = await Mediator.Send(new GetCombinedSeverityScoreQuery());
+        _intensityPercentage = severityResult.AverageSeverityScore;
+
+        _speciesDistribution = await Mediator.Send(new GetRodentTypeDistributionQuery(""));
+    }
+
+    private void SetTimeframe(string timeframe)
+    {
+        ActiveTimeframe = timeframe;
+    }
+}

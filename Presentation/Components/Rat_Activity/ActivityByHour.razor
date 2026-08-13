@@ -1,0 +1,62 @@
+@using Application.DTOs
+@using Application.Features.Stats.Queries
+@using Application.Features.Traps.Queries
+@using ApexCharts
+@inject MediatR.IMediator Mediator
+@inject IJSRuntime JSRuntime
+
+
+<div class="stitch-card">
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+            <p class="text-slate-500 mb-1 fs-12 font-semibold">أوقات النشاط</p>
+            <h3 class="fw-bold mb-0 text-tertiary font-outfit text-headline-lg">@(_summary != null ? $"{_summary.PeakHour:00}:00" : "00:00")</h3>
+            <p class="text-xs text-slate-400 mb-0">صباحاً</p>
+        </div>
+        <div class="w-10 h-10 rounded-lg bg-tertiary-light d-flex align-items-center justify-center">
+            <span class="material-symbols-outlined text-tertiary">schedule</span>
+        </div>
+    </div>
+    <div class="mb-3 text-slate-500 fs-12">
+        <span>إجمالي الالتقاط: </span>
+        <span class="fw-bold text-dark font-outfit">@(_summary?.TotalCaptures.ToString("N0") ?? "0")</span>
+    </div>
+    <button class="w-100 btn-details transition-colors" data-bs-toggle="modal" data-bs-target="#activityByHourModal">عرض التفاصيل</button>
+</div>
+
+<!-- Modal -->
+<div class="modal fade text-dark" id="activityByHourModal" tabindex="-1" data-group="@Group">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content border-0 shadow-lg rounded-xl">
+            <div class="modal-header border-bottom border-slate-100">
+                <h5 class="modal-title fw-bold">تفاصيل النشاط حسب الساعة</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="activityByHourModalBody">
+                <p>جاري تحميل البيانات...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Group { get; set; } = "";
+
+    private ActivityByHourSummaryDto? _summary;
+    private string _selectedGroup = "";
+
+    private async Task LoadData()
+    {
+        _summary = await Mediator.Send(new GetActivityByHourSummaryQuery(
+            string.IsNullOrEmpty(_selectedGroup) ? null : _selectedGroup
+        ));
+        StateHasChanged();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _selectedGroup = Group;
+        await LoadData();
+    }
+}

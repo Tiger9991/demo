@@ -1,0 +1,193 @@
+@using MediatR
+@using Application.Features.Traps.Queries
+@using Application.DTOs
+@using Application.Common.Helpers
+@inject IMediator Mediator
+@inject IJSRuntime JSRuntime
+
+<AnalyticsSummaryCard Title="محطات تعبئة الطعوم"
+                      Value="@Value"
+                      TotalFleet="20"
+                      BadgeText="90% يحتاج تزويد"
+                      Subtext="إجمالي الشحنة المطلوبة للميدان: 1.8 كجم طعوم"
+                      ProgressPercentage="90"
+                      AccentColor="#6366F1"
+                      MdiIcon="truck-delivery-outline"
+                      ModalId="modal_refill_stations"
+                      OnSelected="@OpenModalAsync">
+    <!-- Modal (Unique Royal Indigo Refill Theme with Graphical Visualizations) -->
+    <div class="modal fade" id="modal_refill_stations" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <!-- Modal Header -->
+                <div class="modal-header border-bottom py-3 px-4" style="background-color: #EEF2FF; border-bottom: 2px solid #6366F1 !important;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="p-2.5 rounded-circle text-white shadow-sm d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background-color: #4F46E5 !important;">
+                            <i class="mdi mdi-truck-delivery-outline fs-20"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title fw-bold mb-0 text-dark" style="color: #3730A3 !important;">جدول صيانة وإعادة تعبئة الطعوم</h5>
+                            <span class="fs-12 text-muted">تحليلات استهلاك أوزان الطعوم وحجم المخزون المطلوب للتزويد الميداني</span>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 me-auto ms-0">
+                        <span class="badge text-white px-3 py-1.5 rounded-pill fs-12 fw-bold shadow-sm" style="background-color: #4F46E5 !important;">
+                            @Value محطات مطلوبة للتعبئة
+                        </span>
+                        <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="modal-body p-4" dir="rtl">
+                    
+                    <!-- GRAPHICAL VISUALIZATIONS SECTION (الرسم البياني لأوزان ومستويات الطعوم) -->
+                    <div class="row g-3 mb-4">
+                        <!-- Chart 1: Bait Weight Tier Breakdown Visualizer -->
+                        <div class="col-md-7">
+                            <div class="p-3 rounded-3 border bg-white shadow-sm h-100">
+                                <h6 class="fw-bold text-dark mb-3 fs-13 d-flex align-items-center gap-2">
+                                    <i class="mdi mdi-scale-balance text-primary fs-16" style="color: #4F46E5 !important;"></i>
+                                    <span>تصنيف أوزان الطعوم المتبقية في المحطات (Bait Payload Weight Categories)</span>
+                                </h6>
+                                <div class="d-flex flex-column gap-2.5">
+                                    <div>
+                                        <div class="d-flex justify-content-between fs-12 fw-semibold mb-1">
+                                            <span class="text-danger fw-bold"><i class="mdi mdi-alert-outline me-1"></i>استهلاك كامل / نفاد (0g - 10g)</span>
+                                            <span class="text-danger fw-bold">65% (12 محطة)</span>
+                                        </div>
+                                        <div class="progress" style="height: 8px; border-radius: 4px;">
+                                            <div class="progress-bar bg-danger" style="width: 65%;"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="d-flex justify-content-between fs-12 fw-semibold mb-1">
+                                            <span class="text-warning fw-bold"><i class="mdi mdi-alert-circle-outline me-1"></i>مستوى حرج (10g - 25g)</span>
+                                            <span class="text-warning fw-bold">35% (6 محطات)</span>
+                                        </div>
+                                        <div class="progress" style="height: 8px; border-radius: 4px;">
+                                            <div class="progress-bar bg-warning" style="width: 35%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Chart 2: Total Toxicant Payload Deficit Gauge -->
+                        <div class="col-md-5">
+                            <div class="p-3 rounded-3 border bg-white shadow-sm h-100 d-flex flex-column justify-content-between">
+                                <h6 class="fw-bold text-dark mb-2 fs-13 d-flex align-items-center gap-2">
+                                    <i class="mdi mdi-cube-send text-primary fs-16" style="color: #4F46E5 !important;"></i>
+                                    <span>إجمالي الشحنة المطلوبة للميدان</span>
+                                </h6>
+                                <div class="row g-2 text-center my-auto">
+                                    <div class="col-6">
+                                        <div class="p-2.5 rounded-3 bg-primary-subtle border border-primary-subtle">
+                                            <span class="fs-11 text-muted d-block fw-semibold">إجمالي طعوم النقص</span>
+                                            <span class="fs-18 fw-extrabold text-primary" style="color: #4F46E5 !important;">1.8 كجم</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="p-2.5 rounded-3 bg-indigo-subtle border border-indigo-subtle">
+                                            <span class="fs-11 text-muted d-block fw-semibold">متوسط الاستهلاك</span>
+                                            <span class="fs-18 fw-extrabold text-indigo" style="color: #3730A3 !important;">-4.5g/يوم</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DATA TABLE SECTION (الجدول التفصيلي) -->
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h6 class="fw-bold text-dark mb-0 fs-14">جدول تفاصيل محطات إعادة تعبئة الطعوم</h6>
+                    </div>
+
+                    @if (_modalRows == null)
+                    {
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">جاري التحميل...</span>
+                            </div>
+                        </div>
+                    }
+                    else if (_modalRows.Count == 0)
+                    {
+                        <div class="text-center py-5">
+                            <i class="mdi mdi-food-apple-outline text-success fs-1 mb-3 d-block" style="font-size: 3rem;"></i>
+                            <p class="text-muted mb-0 fs-16 fw-semibold">جميع المحطات تحتوي على طعوم كافية</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive rounded-3 border">
+                            <table class="table table-hover align-middle mb-0 text-center">
+                                <thead style="background-color: #E0E7FF;" class="text-dark">
+                                    <tr>
+                                        <th class="py-3">رقم المحطة</th>
+                                        <th class="py-3">المجموعة</th>
+                                        <th class="py-3">الحالة التشغيلية</th>
+                                        <th class="py-3">تاريخ آخر قياس</th>
+                                        <th class="py-3">الوزن بعد التعبئة</th>
+                                        <th class="py-3">تاريخ التعبئة السابقة</th>
+                                        <th class="py-3">الوزن الحالي المتبقي</th>
+                                        <th class="py-3">المدة منذ القياس</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (int rowIndex = 0; rowIndex < _modalRows.Count; rowIndex++)
+                                    {
+                                        var row = _modalRows[rowIndex];
+                                        <tr>
+                                            <td><span class="fw-bold text-dark fs-14">#@row.TrapNumber</span></td>
+                                            <td><span class="badge bg-light text-dark border px-2.5 py-1">مجموعة @row.GroupNumber</span></td>
+                                            <td>
+                                                <span class="badge @(row.Status == "Active" ? "bg-success-subtle text-success border border-success-subtle" : "bg-secondary-subtle text-secondary border border-secondary-subtle") px-3 py-1 fs-12 fw-bold">
+                                                    @(row.Status == "Active" ? "نشطة" : "غير نشطة")
+                                                </span>
+                                            </td>
+                                            <td class="fs-12 text-muted fw-semibold">@(row.LastMeasurementTime != DateTime.MinValue ? ((DateTime?)row.LastMeasurementTime).ToEgyptianArabic12Hour() : "-")</td>
+                                            <td><span class="badge bg-indigo-subtle text-primary border border-primary-subtle px-2.5 py-1 fs-12 fw-bold">@(row.WeightAfterRefill.HasValue ? $"{row.WeightAfterRefill} جم" : "-")</span></td>
+                                            <td class="fs-12 text-muted fw-semibold">@(row.PreviousMeasurementTime.ToEgyptianArabic12Hour())</td>
+                                            <td><span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1 fs-13 fw-bold">@row.LatestBaitWeight جم</span></td>
+                                            <td><span class="badge bg-light text-dark border px-2.5 py-1 fs-12 fw-bold">@(row.LastMeasurementTime != DateTime.MinValue ? $"{row.DaysSinceLastMeasurement} يوم" : "-")</span></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</AnalyticsSummaryCard>
+
+@code {
+    [Parameter] public int Value { get; set; }
+    private List<TrapsNeedingRefillDto>? _modalRows;
+
+    protected override void OnInitialized()
+    {
+        _ = FetchDataAsync();
+    }
+
+    private async Task FetchDataAsync()
+    {
+        if (_modalRows == null)
+        {
+            _modalRows = await Mediator.Send(new GetTrapsNeedingRefillQuery());
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task OpenModalAsync(string? modalId)
+    {
+        // Open Modal instantly on click (0ms delay)
+        await JSRuntime.InvokeVoidAsync("openAnalyticsModal", modalId, string.Empty);
+        if (_modalRows == null)
+        {
+            await FetchDataAsync();
+        }
+    }
+}

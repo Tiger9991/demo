@@ -1,0 +1,68 @@
+@using Application.DTOs
+@using Application.Features.Stats.Queries
+@using Application.Features.Traps.Queries
+@inject MediatR.IMediator Mediator
+@inject IJSRuntime JSRuntime
+
+
+<div class="stitch-card">
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+            <p class="text-slate-500 mb-1 fs-12 font-semibold">إجمالي الزيارات خلال الشهر</p>
+            <h3 class="fw-bold mb-0 text-primary font-outfit text-headline-lg">@(_summary?.TotalVisits.ToString("N0") ?? "0")</h3>
+        </div>
+        <div class="w-10 h-10 rounded-lg bg-primary-light d-flex align-items-center justify-center">
+            <span class="material-symbols-outlined text-primary">calendar_today</span>
+        </div>
+    </div>
+    <div class="h-10 w-full mb-3 d-flex align-items-end gap-1 sparkline">
+        <div class="bg-primary-light w-full h-[40%] rounded-t-sm"></div>
+        <div class="bg-primary-light w-full h-[60%] rounded-t-sm"></div>
+        <div class="bg-primary-light w-full h-[50%] rounded-t-sm"></div>
+        <div class="bg-primary-light w-full h-[80%] rounded-t-sm"></div>
+        <div class="bg-primary-light w-full h-[70%] rounded-t-sm"></div>
+        <div class="bg-primary-light w-full h-[90%] rounded-t-sm"></div>
+        <div class="bg-primary w-full h-[100%] rounded-t-sm animate-pulse-fast"></div>
+    </div>
+    <button class="w-100 btn-details transition-colors" data-bs-toggle="modal" data-bs-target="#monthlyVisitsModal">عرض التفاصيل</button>
+</div>
+
+<!-- Modal -->
+<div class="modal fade text-dark" id="monthlyVisitsModal" tabindex="-1"
+     data-group="@Group"
+     data-from-date="@(_summary?.MonthStart.ToString("yyyy-MM-dd") ?? "")"
+     data-to-date="@(_summary?.MonthEnd.ToString("yyyy-MM-dd") ?? "")">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-xl">
+            <div class="modal-header border-bottom border-slate-100">
+                <h5 class="modal-title fw-bold">تفاصيل الزيارات اليومية</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="monthlyVisitsModalBody">
+                <p>جاري تحميل البيانات...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Group { get; set; } = "";
+
+    private MonthlyVisitsSummaryDto? _summary;
+    private string _selectedGroup = "";
+
+    private async Task LoadData()
+    {
+        _summary = await Mediator.Send(new GetMonthlyVisitsSummaryQuery(
+            string.IsNullOrEmpty(_selectedGroup) ? null : _selectedGroup
+        ));
+        StateHasChanged();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _selectedGroup = Group;
+        await LoadData();
+    }
+}

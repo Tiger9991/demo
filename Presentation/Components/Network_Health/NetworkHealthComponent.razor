@@ -1,0 +1,198 @@
+@inject IJSRuntime JSRuntime
+@using System.Text.Json
+
+<section class="page-content network-health-page" dir="rtl">
+    <!-- Top Header Area -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <h1 class="page-title mb-0">صحة الشبكة</h1>
+            <div class="status-badge">
+                <span class="status-pulse"></span>
+                <span>نشط الآن</span>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <div class="info-badge">
+                <span class="material-symbols-outlined text-muted" style="vertical-align: middle;">calendar_month</span>
+                <span style="font-size: 14px; font-weight: 600; color: #334155; margin-right: 4px;">آخر 30 يوم</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Row -->
+    <div class="row g-3 mb-4">
+        <!-- KPI 1 -->
+        <div class="col-md-4">
+            <div class="stitch-card position-relative overflow-hidden h-100" style="border-right: 4px solid #003527 !important;">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <p class="text-slate-500 mb-0 fs-12 fw-semibold" style="color: #64748b;">الأجهزة المتصلة</p>
+                    <span class="material-symbols-outlined text-primary" style="font-size: 20px;">router</span>
+                </div>
+                <h3 class="fw-bold mb-0 text-slate-800" style="font-size: 1.7rem; color: #0f172a;">94%</h3>
+                <span class="fs-12 text-muted mt-1 d-block">(1,173/1,248) متصلة بالكامل</span>
+            </div>
+        </div>
+        <!-- KPI 2 -->
+        <div class="col-md-4">
+            <div class="stitch-card position-relative overflow-hidden h-100" style="border-right: 4px solid #ba1a1a !important;">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <p class="text-slate-500 mb-0 fs-12 fw-semibold" style="color: #64748b;">بطارية منخفضة (&lt;20%)</p>
+                    <span class="material-symbols-outlined text-danger" style="font-size: 20px;">battery_alert</span>
+                </div>
+                <h3 class="fw-bold mb-0 text-danger" style="font-size: 1.7rem;">12 مصيدة</h3>
+                <span class="fs-12 text-danger mt-1 d-block">تحتاج لتغيير بطارية فوراً</span>
+            </div>
+        </div>
+        <!-- KPI 3 -->
+        <div class="col-md-4">
+            <div class="stitch-card position-relative overflow-hidden h-100" style="border-right: 4px solid #ff9939 !important;">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <p class="text-slate-500 mb-0 fs-12 fw-semibold" style="color: #64748b;">إشارة ضعيفة</p>
+                    <span class="material-symbols-outlined text-warning" style="font-size: 20px;">signal_cellular_nodata</span>
+                </div>
+                <h3 class="fw-bold mb-0 text-slate-800" style="font-size: 1.7rem; color: #0f172a;">8 مصائد</h3>
+                <span class="fs-12 text-muted mt-1 d-block">(Cellular/LoRa) في حدود الضعف</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-3 mb-4">
+        <!-- Radial Status -->
+        <div class="col-lg-4">
+            <div class="stitch-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0">توزيع حالة الشبكة</h5>
+                </div>
+                <div id="networkRadialChart"></div>
+            </div>
+        </div>
+        <!-- Timeline Downtime -->
+        <div class="col-lg-8">
+            <div class="stitch-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0">منحنى الانقطاع (24 ساعة)</h5>
+                </div>
+                <div id="networkDowntimeChart"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="stitch-card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">الصيانة التقنية الفورية</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover text-right" style="direction: rtl;">
+                <thead>
+                    <tr style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                        <th class="py-2 px-3">رقم المصيدة</th>
+                        <th class="py-2 px-3">المجموعة</th>
+                        <th class="py-2 px-3">المشكلة التقنية</th>
+                        <th class="py-2 px-3">حالة الاتصال</th>
+                        <th class="py-2 px-3 text-left">الإجراء المتاح</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="align-middle">
+                        <td class="py-3 px-3 font-monospace fw-bold">TRP-8821</td>
+                        <td class="py-3 px-3">المجموعة A (الشمالية)</td>
+                        <td class="py-3 px-3 text-danger"><span class="material-symbols-outlined align-middle fs-16 ml-1">battery_1_bar</span> بطارية (5%)</td>
+                        <td class="py-3 px-3"><span class="badge bg-light text-dark border">دون اتصال</span></td>
+                        <td class="py-3 px-3 text-left">
+                            <button class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" style="font-size:12px; font-weight:600; border-radius:6px; background-color:#003527; border-color:#003527;">
+                                <span class="material-symbols-outlined" style="font-size:14px;">build</span> إصدار تذكرة
+                            </button>
+                        </td>
+                    </tr>
+                    <tr class="align-middle">
+                        <td class="py-3 px-3 font-monospace fw-bold">TRP-3490</td>
+                        <td class="py-3 px-3">المجموعة Z (المركزية)</td>
+                        <td class="py-3 px-3 text-warning"><span class="material-symbols-outlined align-middle fs-16 ml-1">signal_cellular_1_bar</span> إشارة ضعيفة (-115dBm)</td>
+                        <td class="py-3 px-3"><span class="badge bg-warning-subtle text-warning border border-warning">متقطع</span></td>
+                        <td class="py-3 px-3 text-left">
+                            <button class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" style="font-size:12px; font-weight:600; border-radius:6px; background-color:#003527; border-color:#003527;">
+                                <span class="material-symbols-outlined" style="font-size:14px;">build</span> إصدار تذكرة
+                            </button>
+                        </td>
+                    </tr>
+                    <tr class="align-middle">
+                        <td class="py-3 px-3 font-monospace fw-bold">TRP-1104</td>
+                        <td class="py-3 px-3">مستودع الميناء</td>
+                        <td class="py-3 px-3 text-danger"><span class="material-symbols-outlined align-middle fs-16 ml-1">battery_alert</span> بطارية (0%)</td>
+                        <td class="py-3 px-3"><span class="badge bg-danger-subtle text-danger border border-danger">ميت</span></td>
+                        <td class="py-3 px-3 text-left">
+                            <span class="text-muted fs-12 italic">تذكرة صيانة قيد التنفيذ</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- RSSI Guide Card -->
+    <div class="stitch-card mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">دليل تفسير قوة الإشارة (RSSI)</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-bordered text-center align-middle mb-0" style="direction: rtl;">
+                <thead class="table-light">
+                    <tr>
+                        <th class="py-2">نطاق قوة الإشارة (dBm)</th>
+                        <th class="py-2">جودة الإشارة (Signal Quality)</th>
+                        <th class="py-2">الوصف بالعربية</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="py-2 font-monospace fw-bold">0 to -60</td>
+                        <td class="py-2"><span class="badge bg-success-subtle text-success fs-13">Excellent</span></td>
+                        <td class="py-2 text-success fw-semibold">ممتاز (قريب جداً)</td>
+                    </tr>
+                    <tr>
+                        <td class="py-2 font-monospace fw-bold">-60 to -80</td>
+                        <td class="py-2"><span class="badge bg-primary-subtle text-primary fs-13">Very good</span></td>
+                        <td class="py-2 text-primary fw-semibold">جيد جداً</td>
+                    </tr>
+                    <tr>
+                        <td class="py-2 font-monospace fw-bold">-80 to -95</td>
+                        <td class="py-2"><span class="badge bg-info-subtle text-info fs-13">Good</span></td>
+                        <td class="py-2 text-info fw-semibold">جيد</td>
+                    </tr>
+                    <tr>
+                        <td class="py-2 font-monospace fw-bold">-95 to -105</td>
+                        <td class="py-2"><span class="badge bg-warning-subtle text-warning fs-13">Fair</span></td>
+                        <td class="py-2 text-warning fw-semibold">مقبول</td>
+                    </tr>
+                    <tr>
+                        <td class="py-2 font-monospace fw-bold">-105 to -115</td>
+                        <td class="py-2"><span class="badge bg-danger-subtle text-danger fs-13">Weak</span></td>
+                        <td class="py-2 text-danger fw-semibold">ضعيف</td>
+                    </tr>
+                    <tr>
+                        <td class="py-2 font-monospace fw-bold">Below -120</td>
+                        <td class="py-2"><span class="badge bg-secondary-subtle text-secondary fs-13">Very weak</span></td>
+                        <td class="py-2 text-muted">ضعيف جداً (بالقرب من حد الحساسية)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var radialValues = JsonSerializer.Serialize(new[] { 90, 85, 94 });
+            var categories = JsonSerializer.Serialize(new[] { "00:00", "06:00", "12:00", "18:00", "الآن" });
+            var downtime = JsonSerializer.Serialize(new[] { 2, 1, 0, 4, 1 });
+
+            await JSRuntime.InvokeVoidAsync("renderNetworkRadialChart", "networkRadialChart", radialValues);
+            await JSRuntime.InvokeVoidAsync("renderNetworkDowntimeChart", "networkDowntimeChart", categories, downtime);
+        }
+    }
+}

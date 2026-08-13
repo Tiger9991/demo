@@ -1,0 +1,443 @@
+@using Application.Features.Customers.Queries
+@using Application.Features.Customers.Commands
+@using Application.Features.TrapGroups.Queries
+@using Application.DTOs
+@using Domain.Enums
+@inject MediatR.IMediator Mediator
+@inject IJSRuntime JSRuntime
+
+<div class="modal fade" id="modal_link_customer_group" tabindex="-1" aria-labelledby="modal_link_customer_group_label" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content shadow-lg border-0 rounded-4" dir="rtl">
+            
+            <!-- ===== Modal Header ===== -->
+            <div class="modal-header bg-primary text-white py-3 px-4 rounded-top-4 align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="bg-white bg-opacity-20 p-2 rounded-3 d-flex align-items-center justify-content-center">
+                        <i class="mdi mdi-link-variant fs-20 text-white"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold text-white mb-0" id="modal_link_customer_group_label">
+                            نافذة ربط مجموعة محطات بعميل
+                        </h5>
+                        <small class="text-white-50 fs-12">تخصيص وإدارة مجموعات الفخاخ والمحطات للعملاء بشكل بروفيسيونال</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+
+            <!-- ===== Modal Body ===== -->
+            <div class="modal-body p-4 bg-light-subtle">
+                @if (_loadingData)
+                {
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="text-muted mt-2 fs-14">جاري تحميل بيانات العملاء والمجموعات...</p>
+                    </div>
+                }
+                else if (_successState)
+                {
+                    <!-- ===== Success State View ===== -->
+                    <div class="text-center py-4 px-3">
+                        <div class="avatar-lg mx-auto mb-3 bg-success-subtle rounded-circle d-flex align-items-center justify-content-center" style="width: 72px; height: 72px;">
+                            <i class="mdi mdi-check-circle-outline text-success display-4"></i>
+                        </div>
+                        <h4 class="fw-bold text-success mb-2">تم الربط النهائي بنجاح!</h4>
+                        <p class="text-muted mb-4 fs-14">تم ربط مجموعة المحطات بالعميل المحدد وتحديث جميع السجلات ذات الصلة.</p>
+
+                        <!-- Summary Card -->
+                        <div class="card border-0 shadow-sm rounded-3 text-start mb-4 overflow-hidden">
+                            <div class="card-header bg-success bg-opacity-10 border-0 py-2 px-3">
+                                <span class="fw-semibold text-success fs-13">
+                                    <i class="mdi mdi-file-document-outline me-1"></i> تفاصيل عملية الربط المؤكدة
+                                </span>
+                            </div>
+                            <div class="card-body p-3 fs-14">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="p-2 bg-light rounded">
+                                            <small class="text-muted d-block mb-1">اسم العميل:</small>
+                                            <strong class="text-dark">@_selectedCustomer?.Name</strong>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="p-2 bg-light rounded">
+                                            <small class="text-muted d-block mb-1">رقم العميل:</small>
+                                            <span class="badge bg-info-subtle text-info fw-bold">@_selectedCustomer?.CustomerNumber</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="p-2 bg-light rounded">
+                                            <small class="text-muted d-block mb-1">المجموعة المربوطة:</small>
+                                            <strong class="text-primary">@_selectedGroup?.TrapGroup (@_selectedGroup?.TrapNumber)</strong>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="p-2 bg-light rounded">
+                                            <small class="text-muted d-block mb-1">تاريخ الربط:</small>
+                                            <span class="text-muted">@DateTime.Now.ToString("yyyy-MM-dd HH:mm tt")</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-center gap-2">
+                            <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
+                                إغلاق النافذة
+                            </button>
+                            <button type="button" class="btn btn-primary px-4 d-flex align-items-center gap-2" @onclick="ResetForm">
+                                <i class="mdi mdi-plus-circle-outline"></i>
+                                <span>ربط مجموعة أخرى</span>
+                            </button>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <!-- ===== Main Interactive Form ===== -->
+                    <div class="row g-4">
+                        
+                        <!-- Step 1: Customer Selection & Details -->
+                        <div class="col-md-6">
+                            <div class="card h-100 border-0 shadow-sm rounded-3">
+                                <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                                    <h6 class="fw-bold mb-0 text-primary">
+                                        <i class="mdi mdi-account-circle-outline me-1 fs-16"></i> 1. بيانات العميل
+                                    </h6>
+                                    @if (_selectedCustomer != null)
+                                    {
+                                        <span class="badge bg-primary-subtle text-primary">محدد</span>
+                                    }
+                                </div>
+                                <div class="card-body p-3">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold fs-13">اختر العميل <span class="text-danger">*</span></label>
+                                        <select class="form-select" @onchange="OnCustomerSelected">
+                                            <option value="">-- اختر من قائمة العملاء --</option>
+                                            @foreach (var c in _customersList)
+                                            {
+                                                <option value="@c.Id" selected="@(c.Id == _selectedCustomerId)">
+                                                    @c.Name (@c.CustomerNumber) - @c.CustomerTypeDisplay
+                                                </option>
+                                            }
+                                        </select>
+                                    </div>
+
+                                    @if (_selectedCustomer != null)
+                                    {
+                                        <div class="p-3 bg-light rounded-3 border border-light-subtle">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <div>
+                                                    <h6 class="fw-bold text-dark mb-1">@_selectedCustomer.Name</h6>
+                                                    <span class="badge bg-info-subtle text-info me-1">@_selectedCustomer.CustomerNumber</span>
+                                                    <span class="badge @(_selectedCustomer.CustomerType == CustomerType.Company ? "bg-primary-subtle text-primary" : "bg-success-subtle text-success")">
+                                                        @_selectedCustomer.CustomerTypeDisplay
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <hr class="my-2 border-secondary-subtle" />
+
+                                            <div class="fs-12 text-muted space-y-1">
+                                                <div><i class="mdi mdi-phone me-1"></i> الهاتف: @(_selectedCustomer.Phone ?? "غير مسجل")</div>
+                                                <div><i class="mdi mdi-email-outline me-1"></i> البريد: @(_selectedCustomer.Email ?? "غير مسجل")</div>
+                                                <div><i class="mdi mdi-map-marker-outline me-1"></i> العنوان: @(_selectedCustomer.Address ?? "غير مسجل")</div>
+                                                <div class="mt-2 text-primary fw-semibold">
+                                                    <i class="mdi mdi-layers-outline me-1"></i> مجموعات حالية: @_selectedCustomer.TrapGroupCount مجموعة
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="p-4 text-center border border-dashed rounded-3 text-muted fs-13">
+                                            <i class="mdi mdi-account-search-outline display-6 opacity-50 mb-2"></i>
+                                            <p class="mb-0">يرجى اختيار عميل لعرض كافة التفاصيل والمعلومات الخاصة به.</p>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Trap Group Selection & Details -->
+                        <div class="col-md-6">
+                            <div class="card h-100 border-0 shadow-sm rounded-3">
+                                <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                                    <h6 class="fw-bold mb-0 text-primary">
+                                        <i class="mdi mdi-layers-triple-outline me-1 fs-16"></i> 2. مجموعة المحطات
+                                    </h6>
+                                    @if (_selectedGroup != null)
+                                    {
+                                        <span class="badge bg-success-subtle text-success">محددة</span>
+                                    }
+                                </div>
+                                <div class="card-body p-3">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold fs-13">اختر مجموعة المحطات <span class="text-danger">*</span></label>
+                                        <select class="form-select" @onchange="OnGroupSelected">
+                                            <option value="">-- اختر من قائمة المجموعات --</option>
+                                            @foreach (var g in _groupsList)
+                                            {
+                                                <option value="@g.Id" selected="@(g.Id == _selectedGroupId)">
+                                                    @g.TrapGroup (@g.TrapNumber) @(g.CustomerId != null ? $"[مرتبطة بـ: {g.CustomerName}]" : "[غير مرتبطة]")
+                                                </option>
+                                            }
+                                        </select>
+                                    </div>
+
+                                    @if (_selectedGroup != null)
+                                    {
+                                        <div class="p-3 bg-light rounded-3 border border-light-subtle">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <div>
+                                                    <h6 class="fw-bold text-dark mb-1">المجموعة: @_selectedGroup.TrapGroup</h6>
+                                                    <span class="badge bg-secondary-subtle text-secondary me-1">رمز: @_selectedGroup.TrapNumber</span>
+                                                </div>
+                                                @if (_selectedGroup.CustomerId != null)
+                                                {
+                                                    <span class="badge bg-warning-subtle text-warning">مرتبطة حالياً بعميل آخر</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-success-subtle text-success">متاحة للربط</span>
+                                                }
+                                            </div>
+
+                                            <hr class="my-2 border-secondary-subtle" />
+
+                                            <div class="fs-12 text-muted space-y-1">
+                                                <div><i class="mdi mdi-information-outline me-1"></i> الوصف: @(_selectedGroup.Description ?? "لا يوجد وصف")</div>
+                                                <div>
+                                                    <i class="mdi mdi-account-tie me-1"></i> الربط الحالي: 
+                                                    @if (_selectedGroup.CustomerId != null)
+                                                    {
+                                                        <strong class="text-warning">@_selectedGroup.CustomerName</strong>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-success fw-semibold">غير تخصيص</span>
+                                                    }
+                                                </div>
+                                                <div><i class="mdi mdi-calendar-clock me-1"></i> تاريخ الإنشاء: @_selectedGroup.CreatedAt.ToString("yyyy-MM-dd")</div>
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="p-4 text-center border border-dashed rounded-3 text-muted fs-13">
+                                            <i class="mdi mdi-layers-search-outline display-6 opacity-50 mb-2"></i>
+                                            <p class="mb-0">قم باختيار مجموعة محطات لعرض مواصفاتها وحالة التكليف الحالية.</p>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- ===== Step 3: Confirmation Preview & Live Action ===== -->
+                    @if (_selectedCustomer != null && _selectedGroup != null)
+                    {
+                        <div class="card border-0 shadow-sm rounded-3 mt-4 bg-primary-subtle border-start border-primary border-4">
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="bg-primary text-white p-2 rounded-circle">
+                                            <i class="mdi mdi-link-check fs-20"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="fw-bold mb-1 text-primary">ملخص التأكيد قبل الربط</h6>
+                                            <p class="mb-0 text-muted fs-13">
+                                                سيتم ربط المجموعة <strong>@_selectedGroup.TrapGroup</strong> بالعميل <strong>@_selectedCustomer.Name</strong>.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="badge bg-white text-primary border border-primary-subtle px-3 py-2 fs-12 fw-normal">
+                                        <i class="mdi mdi-shield-check me-1 text-success"></i> جاهز للتأكيد
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(_errorMessage))
+                    {
+                        <div class="alert alert-danger mt-3 mb-0 d-flex align-items-center gap-2 fs-13 rounded-3" role="alert">
+                            <i class="mdi mdi-alert-circle-outline fs-18"></i>
+                            <div>@_errorMessage</div>
+                        </div>
+                    }
+                }
+            </div>
+
+            <!-- ===== Modal Footer ===== -->
+            @if (!_successState)
+            {
+                <div class="modal-footer bg-white border-top py-3 px-4 rounded-bottom-4 justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
+                        إلغاء
+                    </button>
+                    
+                    <!-- Exact Required Confirmation Button -->
+                    <button type="button" 
+                            class="btn btn-success d-flex align-items-center justify-content-center gap-2 px-4 py-2 shadow-sm"
+                            @onclick="ConfirmLinking"
+                            disabled="@(_saving || _selectedCustomerId == Guid.Empty || _selectedGroupId == Guid.Empty)">
+                        @if (_saving)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                        }
+                        else
+                        {
+                            <i class="mdi mdi-check-circle-outline fs-18"></i>
+                        }
+                        <span>تأكيد الربط النهائي</span>
+                    </button>
+                </div>
+            }
+
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback OnLinked { get; set; }
+
+    private List<CustomerDto> _customersList = new();
+    private List<TrapGroupDto> _groupsList = new();
+
+    private Guid _selectedCustomerId = Guid.Empty;
+    private Guid _selectedGroupId = Guid.Empty;
+
+    private CustomerDto? _selectedCustomer;
+    private TrapGroupDto? _selectedGroup;
+
+    private bool _loadingData = false;
+    private bool _saving = false;
+    private bool _successState = false;
+    private string? _errorMessage;
+
+    public async Task OpenModalAsync(Guid? customerId = null, Guid? groupId = null)
+    {
+        _loadingData = true;
+        _successState = false;
+        _errorMessage = null;
+
+        await JSRuntime.InvokeVoidAsync("openAnalyticsModal", "modal_link_customer_group", string.Empty);
+
+        try
+        {
+            _customersList = await Mediator.Send(new GetAllCustomersQuery());
+            _groupsList = await Mediator.Send(new GetAllTrapGroupsQuery());
+
+            if (customerId.HasValue && customerId.Value != Guid.Empty)
+            {
+                _selectedCustomerId = customerId.Value;
+                _selectedCustomer = _customersList.FirstOrDefault(c => c.Id == _selectedCustomerId);
+            }
+            else
+            {
+                _selectedCustomerId = Guid.Empty;
+                _selectedCustomer = null;
+            }
+
+            if (groupId.HasValue && groupId.Value != Guid.Empty)
+            {
+                _selectedGroupId = groupId.Value;
+                _selectedGroup = _groupsList.FirstOrDefault(g => g.Id == _selectedGroupId);
+            }
+            else
+            {
+                _selectedGroupId = Guid.Empty;
+                _selectedGroup = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"خطأ أثناء تحميل البيانات: {ex.Message}";
+        }
+        finally
+        {
+            _loadingData = false;
+            StateHasChanged();
+        }
+    }
+
+    private void OnCustomerSelected(ChangeEventArgs e)
+    {
+        if (Guid.TryParse(e.Value?.ToString(), out var id))
+        {
+            _selectedCustomerId = id;
+            _selectedCustomer = _customersList.FirstOrDefault(c => c.Id == id);
+        }
+        else
+        {
+            _selectedCustomerId = Guid.Empty;
+            _selectedCustomer = null;
+        }
+    }
+
+    private void OnGroupSelected(ChangeEventArgs e)
+    {
+        if (Guid.TryParse(e.Value?.ToString(), out var id))
+        {
+            _selectedGroupId = id;
+            _selectedGroup = _groupsList.FirstOrDefault(g => g.Id == id);
+        }
+        else
+        {
+            _selectedGroupId = Guid.Empty;
+            _selectedGroup = null;
+        }
+    }
+
+    private async Task ConfirmLinking()
+    {
+        if (_selectedCustomerId == Guid.Empty || _selectedGroupId == Guid.Empty)
+        {
+            _errorMessage = "يرجى اختيار كل من العميل ومجموعة المحطات للتأكيد.";
+            return;
+        }
+
+        _saving = true;
+        _errorMessage = null;
+
+        try
+        {
+            var success = await Mediator.Send(new AssignTrapGroupToCustomerCommand(_selectedCustomerId, _selectedGroupId));
+            if (success)
+            {
+                _successState = true;
+                if (OnLinked.HasDelegate)
+                {
+                    await OnLinked.InvokeAsync();
+                }
+            }
+            else
+            {
+                _errorMessage = "تعذر إتمام الربط، يرجى المحاولة لاحقاً.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"حدث خطأ أثناء إجراء الربط: {ex.Message}";
+        }
+        finally
+        {
+            _saving = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ResetForm()
+    {
+        _successState = false;
+        _selectedCustomerId = Guid.Empty;
+        _selectedGroupId = Guid.Empty;
+        _selectedCustomer = null;
+        _selectedGroup = null;
+        _errorMessage = null;
+        StateHasChanged();
+    }
+}

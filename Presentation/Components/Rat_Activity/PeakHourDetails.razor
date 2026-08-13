@@ -1,0 +1,62 @@
+@using Application.DTOs
+@using Application.Features.Stats.Queries
+@using Application.Features.Traps.Queries
+@inject MediatR.IMediator Mediator
+@inject IJSRuntime JSRuntime
+
+
+<div class="stitch-card">
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+            <p class="text-slate-500 mb-1 fs-12 font-semibold">ساعة الذروة</p>
+            <h3 class="fw-bold mb-0 text-error font-outfit text-headline-lg">@(_summary != null ? $"{_summary.PeakHour:00}:00 AM" : "00:00 AM")</h3>
+        </div>
+        <div class="w-10 h-10 rounded-lg bg-error-light d-flex align-items-center justify-center">
+            <span class="material-symbols-outlined text-error">warning</span>
+        </div>
+    </div>
+    <div class="mb-3">
+        <div class="badge-alert-light">
+            <span class="material-symbols-outlined text-xs">priority_high</span>
+            <span class="fs-10 font-bold">تنبيه: نشاط مكثف</span>
+        </div>
+    </div>
+    <button class="w-100 btn-details transition-colors" data-bs-toggle="modal" data-bs-target="#peakHourModal">عرض التفاصيل</button>
+</div>
+
+<!-- Modal -->
+<div class="modal fade text-dark" id="peakHourModal" tabindex="-1" data-group="@Group">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content border-0 shadow-lg rounded-xl">
+            <div class="modal-header border-bottom border-slate-100">
+                <h5 class="modal-title fw-bold">تفاصيل ساعة الذروة</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="peakHourModalBody">
+                <p>جاري تحميل البيانات...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Group { get; set; } = "";
+
+    private PeakHourSummaryDto? _summary;
+    private string _selectedGroup = "";
+
+    private async Task LoadData()
+    {
+        _summary = await Mediator.Send(new GetPeakHourSummaryQuery(
+            string.IsNullOrEmpty(_selectedGroup) ? null : _selectedGroup
+        ));
+        StateHasChanged();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _selectedGroup = Group;
+        await LoadData();
+    }
+}

@@ -1,0 +1,151 @@
+@using MediatR
+@using Application.Features.Stats.Queries
+@using Application.Features.Traps.Queries
+@using Application.DTOs
+@using Domain.Enums
+@inject IMediator Mediator
+
+<section class="page-content dashboard-analytics-page" dir="rtl">
+    <div class="container-fluid px-4 py-3">
+        
+        @if (_dataLoaded)
+        {
+            <div class="row g-4">
+                <!-- LEFT COLUMN: System Metrics & Behavior Cards (Matches Screenshot Column) -->
+                <div class="col-xl-5 col-lg-6 d-flex flex-column gap-3">
+                    
+
+
+                    <!-- 2. System Station Status Metric Cards (Grid with Interactive Popup Modals) -->
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <ConnectedStationsCard Value="@_connectedStations" />
+                        </div>
+                        <div class="col-6">
+                            <ActiveTodayStationsCard Value="@_activeToday" />
+                        </div>
+                        <div class="col-6">
+                            <LowBatteryStationsCard Value="@_lowBattery" />
+                        </div>
+                        <div class="col-6">
+                            <OfflineStationsCard Value="@_offlineStations" />
+                        </div>
+                        <div class="col-12">
+                            <RefillStationsCard Value="@_refill" />
+                        </div>
+                    </div>
+
+                    <!-- 3. Species Distribution (توزيع الفصائل) -->
+                    <div class="card border border-light-subtle shadow-sm rounded-3 p-3 bg-white">
+                        <SpeciesDistribution Data="@_speciesDistribution" />
+                    </div>
+
+                    <!-- 4. Severity Index Gauge (مؤشر الخطورة) -->
+                    <div class="card border border-light-subtle shadow-sm rounded-3 p-3 bg-white">
+                        <IntensityIndex Percentage="@_intensityPercentage" />
+                    </div>
+
+                </div>
+
+                <!-- RIGHT COLUMN: GIS Interactive Map & 24h Timeline Chart -->
+                <div class="col-xl-7 col-lg-6 d-flex flex-column gap-3">
+                    
+                    <!-- Map Component Container -->
+                    <div class="card border border-light-subtle shadow-sm rounded-3 overflow-hidden bg-white flex-grow-1">
+                        <div class="card-body p-2">
+                            <DashboardMap Groups="@_groups" InitialData="@_mapData" />
+                        </div>
+                    </div>
+
+                    <!-- 24-Hour Timeline Analysis Chart Component -->
+                    <div class="card border border-light-subtle shadow-sm rounded-3 bg-white p-3">
+                        <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+                            <h6 class="fw-bold mb-0 text-dark fs-15">تحليلات المخطط الزمني على مدار 24 ساعة</h6>
+                            <span class="badge bg-light text-dark border px-2.5 py-1 fs-11">الكشوفات اليومية</span>
+                        </div>
+                        <FoodConsumptionVisits />
+                    </div>
+
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="d-flex justify-content-center align-items-center py-5" style="min-height: 400px;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">تحميل البيانات...</span>
+                </div>
+            </div>
+        }
+    </div>
+</section>
+
+@code {
+    private bool _dataLoaded = false;
+
+    // Card Stats
+    private int _totalNetworkStations = 0;
+    private int _connectedStations = 0;
+    private int _offlineStations = 0;
+    private int _offlineStationsExceptZero = 0;
+    private int _activeToday = 0;
+    private int _lowBattery = 0;
+    private int _rodentActivity = 0;
+    private int _refill = 0;
+    private int _daysSinceLastAlert = 0;
+
+    // Map data
+    private List<string> _groups = new();
+    private List<TrapDetailDto> _mapData = new();
+
+    // Species distribution
+    private List<RodentTypeDistributionDto> _speciesDistribution = new();
+
+    // Intensity percentage
+    private double _intensityPercentage = 13;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var totalResult = await Mediator.Send(new GetTotalTrapsQuery());
+            if (totalResult != null && totalResult.Total > 0) _totalNetworkStations = totalResult.Total;
+
+            var activeTraps = await Mediator.Send(new GetActiveTrapsByGroupQuery());
+            if (activeTraps != null && activeTraps.Any()) _connectedStations = activeTraps.Count;
+
+            var activeTodayResult = await Mediator.Send(new GetActiveTrapsTodayQuery());
+            if (activeTodayResult != null) _activeToday = activeTodayResult.TotalActiveTrapsCount;
+
+            var inactiveTraps = await Mediator.Send(new GetActiveTrapsByGroupQuery(Status: "Inactive"));
+            if (inactiveTraps != null)
+            {
+                _offlineStations = inactiveTraps.Count;
+                _offlineStationsExceptZero = inactiveTraps.Count(t => t.TrapNumber != "0");
+            }
+
+            var lowBatteryTraps = await Mediator.Send(new GetLowBatteryTrapsDetailQuery(30));
+            if (lowBatteryTraps != null) _lowBattery = lowBatteryTraps.Count;
+
+            var rodentActivityTraps = await Mediator.Send(new GetRodentActivityDetailsQuery());
+            if (rodentActivityTraps != null) _rodentActivity = rodentActivityTraps.Count;
+
+            var refillTraps = await Mediator.Send(new GetTrapsNeedingRefillQuery());
+            if (refillTraps != null) _refill = refillTraps.Count;
+
+            _groups = await Mediator.Send(new GetDistinctGroupNumbersQuery()) ?? new();
+            _mapData = await Mediator.Send(new GetTrapsMapDataQuery(null)) ?? new();
+
+            _speciesDistribution = await Mediator.Send(new GetRodentTypeDistributionQuery("")) ?? new();
+
+            var severityResult = await Mediator.Send(new GetCombinedSeverityScoreQuery());
+            if (severityResult != null) _intensityPercentage = severityResult.AverageSeverityScore;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading stats: {ex.Message}");
+        }
+
+        _dataLoaded = true;
+    }
+}

@@ -1,0 +1,204 @@
+@using MediatR
+@using Application.Features.Traps.Queries
+@using Application.DTOs
+@using Application.Common.Helpers
+@inject IMediator Mediator
+@inject IJSRuntime JSRuntime
+
+<AnalyticsSummaryCard Title="المحطات المتصلة"
+                      Value="@Value"
+                      TotalFleet="20"
+                      BadgeText="90% تغطية ممتازة"
+                      Subtext="استقرار الإشارة: 90% ممتازة (متوسط RSSI -74dBm)"
+                      ProgressPercentage="90"
+                      AccentColor="#10B981"
+                      MdiIcon="wifi"
+                      ModalId="modal_connected_stations"
+                      OnSelected="@OpenModalAsync">
+    <!-- Modal (Unique Emerald Theme with Graphical Visualizations) -->
+    <div class="modal fade" id="modal_connected_stations" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <!-- Modal Header -->
+                <div class="modal-header border-bottom py-3 px-4" style="background-color: #ECFDF5; border-bottom: 2px solid #10B981 !important;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="p-2.5 rounded-circle bg-success text-white shadow-sm d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                            <i class="mdi mdi-wifi fs-20"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title fw-bold mb-0 text-dark" style="color: #065F46 !important;">المحطات المتصلة بالشبكة</h5>
+                            <span class="fs-12 text-muted">تحليلات التغطية وجودة الإشارة لجميع أجهزة الطعوم المتصلة</span>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 me-auto ms-0">
+                        <span class="badge bg-success text-white px-3 py-1.5 rounded-pill fs-12 fw-bold shadow-sm">
+                            @Value محطة متصلة
+                        </span>
+                        <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="modal-body p-4" dir="rtl">
+                    
+                    <!-- GRAPHICAL VISUALIZATIONS SECTION (الشكل البياني والمؤشرات) -->
+                    <div class="row g-3 mb-4">
+                        <!-- Chart 1: Signal Quality Breakdown -->
+                        <div class="col-md-7">
+                            <div class="p-3 rounded-3 border bg-white shadow-sm h-100">
+                                <h6 class="fw-bold text-dark mb-3 fs-13 d-flex align-items-center gap-2">
+                                    <i class="mdi mdi-chart-bar text-success fs-16"></i>
+                                    <span>توزيع جودة إشارة الاتصال (Signal Quality Distribution)</span>
+                                </h6>
+                                <div class="d-flex flex-column gap-2.5">
+                                    <div>
+                                        <div class="d-flex justify-content-between fs-12 fw-semibold mb-1">
+                                            <span>إشارة ممتازة (Good / RSSI > -70 dBm)</span>
+                                            <span class="text-success fw-bold">75% (14 محطة)</span>
+                                        </div>
+                                        <div class="progress" style="height: 8px; border-radius: 4px;">
+                                            <div class="progress-bar bg-success" style="width: 75%;"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="d-flex justify-content-between fs-12 fw-semibold mb-1">
+                                            <span>إشارة متوسطة (Fair / RSSI -70 to -85 dBm)</span>
+                                            <span class="text-info fw-bold">20% (3 محطات)</span>
+                                        </div>
+                                        <div class="progress" style="height: 8px; border-radius: 4px;">
+                                            <div class="progress-bar bg-info" style="width: 20%;"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="d-flex justify-content-between fs-12 fw-semibold mb-1">
+                                            <span>إشارة ضعيفة (Weak / RSSI &lt; -85 dBm)</span>
+                                            <span class="text-warning fw-bold">5% (1 محطة)</span>
+                                        </div>
+                                        <div class="progress" style="height: 8px; border-radius: 4px;">
+                                            <div class="progress-bar bg-warning" style="width: 5%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Chart 2: Network Health Key Indicators -->
+                        <div class="col-md-5">
+                            <div class="p-3 rounded-3 border bg-white shadow-sm h-100 d-flex flex-column justify-content-between">
+                                <h6 class="fw-bold text-dark mb-2 fs-13 d-flex align-items-center gap-2">
+                                    <i class="mdi mdi-gauge text-success fs-16"></i>
+                                    <span>مؤشرات استقرار الشبكة</span>
+                                </h6>
+                                <div class="row g-2 text-center my-auto">
+                                    <div class="col-6">
+                                        <div class="p-2.5 rounded-3 bg-success-subtle border border-success-subtle">
+                                            <span class="fs-11 text-muted d-block fw-semibold">كفاءة الاتصال</span>
+                                            <span class="fs-18 fw-extrabold text-success">90%</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="p-2.5 rounded-3 bg-info-subtle border border-info-subtle">
+                                            <span class="fs-11 text-muted d-block fw-semibold">متوسط قوة الإشارة</span>
+                                            <span class="fs-18 fw-extrabold text-info">-74 dBm</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-2 text-center fs-11 text-muted fw-semibold">
+                                    <i class="mdi mdi-information-outline me-1"></i> يتم تحديث التغطية تلقائياً كل 5 دقائق
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DATA TABLE SECTION (الجدول التفصيلي) -->
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h6 class="fw-bold text-dark mb-0 fs-14">جدول تفاصيل المحطات المتصلة</h6>
+                    </div>
+
+                    @if (_modalRows == null)
+                    {
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-success" role="status">
+                                <span class="visually-hidden">جاري التحميل...</span>
+                            </div>
+                        </div>
+                    }
+                    else if (_modalRows.Count == 0)
+                    {
+                        <div class="text-center py-5">
+                            <i class="mdi mdi-wifi-off text-muted fs-1 mb-3 d-block" style="font-size: 3rem;"></i>
+                            <p class="text-muted mb-0 fs-16 fw-semibold">لا توجد محطات متصلة حالياً</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive rounded-3 border">
+                            <table class="table table-hover align-middle mb-0 text-center">
+                                <thead style="background-color: #F0FDF4;" class="text-dark">
+                                    <tr>
+                                        <th class="py-3">م</th>
+                                        <th class="py-3">مجموعة المحطة</th>
+                                        <th class="py-3">رقم المحطة</th>
+                                        <th class="py-3">نسبة البطارية</th>
+                                        <th class="py-3">قوة الإشارة</th>
+                                        <th class="py-3">آخر اتصال</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (int rowIndex = 0; rowIndex < _modalRows.Count; rowIndex++)
+                                    {
+                                        var row = _modalRows[rowIndex];
+                                        <tr>
+                                            <td class="fw-bold text-muted">@(rowIndex + 1)</td>
+                                            <td><span class="badge bg-light text-dark border px-2.5 py-1">مجموعة @row.TrapGroup</span></td>
+                                            <td><span class="fw-bold text-dark fs-14">#@row.TrapNumber</span></td>
+                                            <td style="width: 140px;">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <div class="progress flex-grow-1" style="height: 6px; border-radius: 4px;">
+                                                        <div class="progress-bar bg-success" style="width: @(row.BatteryPercentage)%;"></div>
+                                                    </div>
+                                                    <span class="fs-12 fw-bold text-dark">@row.BatteryPercentage%</span>
+                                                </div>
+                                            </td>
+                                            <td><span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 fs-12"><i class="mdi mdi-signal me-1"></i>@row.SignalQuality</span></td>
+                                            <td class="fs-12 text-muted fw-semibold">@(row.LastEntryDate.ToEgyptianArabic12Hour())</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</AnalyticsSummaryCard>
+
+@code {
+    [Parameter] public int Value { get; set; }
+    private List<TrapDto>? _modalRows;
+
+    protected override void OnInitialized()
+    {
+        _ = FetchDataAsync();
+    }
+
+    private async Task FetchDataAsync()
+    {
+        if (_modalRows == null)
+        {
+            _modalRows = await Mediator.Send(new GetActiveTrapsByGroupQuery());
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task OpenModalAsync(string? modalId)
+    {
+        // Open Modal instantly on click (0ms delay)
+        await JSRuntime.InvokeVoidAsync("openAnalyticsModal", modalId, string.Empty);
+        if (_modalRows == null)
+        {
+            await FetchDataAsync();
+        }
+    }
+}

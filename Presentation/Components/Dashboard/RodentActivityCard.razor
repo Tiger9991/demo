@@ -1,0 +1,98 @@
+@using MediatR
+@using Application.Features.Stats.Queries
+@using Application.DTOs
+@using Application.Common.Helpers
+@inject IMediator Mediator
+@inject IJSRuntime JSRuntime
+
+<AnalyticsSummaryCard Title="اجمالى نشاط القوارض"
+                      Value="@Value"
+                      Icon="trending-up-outline"
+                      CardClass="bg-dark-subtle"
+                      AvatarClass="bg-dark"
+                      InsetClass="inset-dark"
+                      ModalId="modal_rodent_activity"
+                      OnSelected="@OpenModalAsync">
+    <!-- Modal -->
+    <div class="modal fade" id="modal_rodent_activity" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">اجمالى نشاط القوارض</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" dir="rtl">
+                    @if (_modalRows == null)
+                    {
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    }
+                    else if (_modalRows.Count == 0)
+                    {
+                        <div class="text-center py-5">
+                            <i class="mdi mdi-database-off-outline text-muted fs-1 mb-3 d-block" style="font-size: 3rem;"></i>
+                            <p class="text-muted mb-0 fs-16">لا يوجد بيانات</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover table-bordered align-middle mb-0 text-center">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>م</th>
+                                        <th>مجموعة المحطة</th>
+                                        <th>رقم المحطة</th>
+                                        <th>الحالة</th>
+                                        <th>عدد مرات الزيارة</th>
+                                        <th>توقيت اخر زيارة </th>
+                                        <th>استهلاك الطعوم</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (int rowIndex = 0; rowIndex < _modalRows.Count; rowIndex++)
+                                    {
+                                        var row = _modalRows[rowIndex];
+                                        <tr>
+                                            <td>@(rowIndex + 1)</td>
+                                            <td>@row.GroupNumber</td>
+                                            <td>@row.TrapNumber</td>
+                                            <td>
+                                                <span class="badge @(row.Status == "Active" ? "bg-success" : "bg-secondary")">
+                                                    @(row.Status == "Active" ? "نشطة" : "غير نشطة")
+                                                </span>
+                                            </td>
+                                            <td>@row.TotalCaptures</td>
+                                           @*  <td>@(row.LastCaptureTime?.ToString("yyyy-MM-dd HH:mm") ?? "-")</td> *@
+                                            <td>@(row.LastCaptureTime.ToEgyptianArabic12Hour())</td>
+
+                                            <td>@row.TotalBaitConsumed </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</AnalyticsSummaryCard>
+
+@code {
+    [Parameter] public int Value { get; set; }
+    private List<ActiveTrapSummaryDto>? _modalRows;
+
+    private async Task OpenModalAsync(string? modalId)
+    {
+        if (_modalRows == null)
+        {
+            _modalRows = await Mediator.Send(new GetRodentActivityDetailsQuery());
+            StateHasChanged();
+        }
+        await JSRuntime.InvokeVoidAsync("openAnalyticsModal", modalId, string.Empty);
+    }
+}

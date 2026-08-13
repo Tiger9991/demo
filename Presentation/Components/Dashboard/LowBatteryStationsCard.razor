@@ -1,0 +1,194 @@
+@using MediatR
+@using Application.Features.Traps.Queries
+@using Application.DTOs
+@inject IMediator Mediator
+@inject IJSRuntime JSRuntime
+
+<AnalyticsSummaryCard Title="محطات بطارية منخفضة"
+                      Value="@Value"
+                      TotalFleet="20"
+                      BadgeText="40% يتطلب الصيانة"
+                      Subtext="2 أجهزة بمستوى حرج < 10% (تبديل عاجل خلال 24h)"
+                      ProgressPercentage="40"
+                      AccentColor="#F59E0B"
+                      MdiIcon="battery-alert"
+                      ModalId="modal_low_battery"
+                      OnSelected="@OpenModalAsync">
+    <!-- Modal (Unique Amber Battery Theme with Graphical Visualizations) -->
+    <div class="modal fade" id="modal_low_battery" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <!-- Modal Header -->
+                <div class="modal-header border-bottom py-3 px-4" style="background-color: #FFFBEB; border-bottom: 2px solid #F59E0B !important;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="p-2.5 rounded-circle text-white shadow-sm d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background-color: #D97706 !important;">
+                            <i class="mdi mdi-battery-alert fs-20"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title fw-bold mb-0 text-dark" style="color: #92400E !important;">محطات بطارية منخفضة (≤ 25%)</h5>
+                            <span class="fs-12 text-muted">تحليلات استهلاك طاقة البطاريات والتنبيهات الميدانية لاستبدال الشحنات</span>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 me-auto ms-0">
+                        <span class="badge text-dark px-3 py-1.5 rounded-pill fs-12 fw-bold shadow-sm" style="background-color: #FBBF24 !important;">
+                            @Value محطات تتطلب الصيانة
+                        </span>
+                        <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="modal-body p-4" dir="rtl">
+                    
+                    <!-- GRAPHICAL VISUALIZATIONS SECTION (الرسم البياني لمستويات البطارية) -->
+                    <div class="row g-3 mb-4">
+                        <!-- Chart 1: Battery Level Tier Breakdown Bar Chart -->
+                        <div class="col-md-7">
+                            <div class="p-3 rounded-3 border bg-white shadow-sm h-100">
+                                <h6 class="fw-bold text-dark mb-3 fs-13 d-flex align-items-center gap-2">
+                                    <i class="mdi mdi-chart-donut text-warning fs-16" style="color: #D97706 !important;"></i>
+                                    <span>تصنيف مستويات شحن البطاريات المتأثرة (Battery Tier Breakdown)</span>
+                                </h6>
+                                <div class="d-flex flex-column gap-3">
+                                    <div>
+                                        <div class="d-flex justify-content-between fs-12 fw-semibold mb-1">
+                                            <span class="text-danger fw-bold"><i class="mdi mdi-alert-circle me-1"></i>مستوى حرج جداً (Critical / ≤ 10%)</span>
+                                            <span class="text-danger fw-bold">25% (2 محطات)</span>
+                                        </div>
+                                        <div class="progress" style="height: 8px; border-radius: 4px;">
+                                            <div class="progress-bar bg-danger" style="width: 25%;"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="d-flex justify-content-between fs-12 fw-semibold mb-1">
+                                            <span class="text-warning fw-bold"><i class="mdi mdi-battery-10 me-1"></i>مستوى منخفض (Low / 10% - 25%)</span>
+                                            <span class="text-warning fw-bold">75% (6 محطات)</span>
+                                        </div>
+                                        <div class="progress" style="height: 8px; border-radius: 4px;">
+                                            <div class="progress-bar bg-warning" style="width: 75%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Chart 2: Battery Replacement Priority Gauge -->
+                        <div class="col-md-5">
+                            <div class="p-3 rounded-3 border bg-white shadow-sm h-100 d-flex flex-column justify-content-between">
+                                <h6 class="fw-bold text-dark mb-2 fs-13 d-flex align-items-center gap-2">
+                                    <i class="mdi mdi-tools text-warning fs-16" style="color: #D97706 !important;"></i>
+                                    <span>أولوية التبديل الميداني</span>
+                                </h6>
+                                <div class="row g-2 text-center my-auto">
+                                    <div class="col-6">
+                                        <div class="p-2.5 rounded-3 bg-danger-subtle border border-danger-subtle">
+                                            <span class="fs-11 text-muted d-block fw-semibold">تبديل عاجل (24h)</span>
+                                            <span class="fs-18 fw-extrabold text-danger">2 أجهزة</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="p-2.5 rounded-3 bg-warning-subtle border border-warning-subtle">
+                                            <span class="fs-11 text-muted d-block fw-semibold">جدول الأسبوع</span>
+                                            <span class="fs-18 fw-extrabold text-warning" style="color: #B45309 !important;">6 أجهزة</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DATA TABLE SECTION (الجدول التفصيلي) -->
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h6 class="fw-bold text-dark mb-0 fs-14">جدول تفاصيل المحطات ذات البطارية المنخفضة</h6>
+                    </div>
+
+                    @if (_modalRows == null)
+                    {
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-warning" role="status">
+                                <span class="visually-hidden">جاري التحميل...</span>
+                            </div>
+                        </div>
+                    }
+                    else if (_modalRows.Count == 0)
+                    {
+                        <div class="text-center py-5">
+                            <i class="mdi mdi-battery-charging-100 text-success fs-1 mb-3 d-block" style="font-size: 3rem;"></i>
+                            <p class="text-muted mb-0 fs-16 fw-semibold">جميع بطاريات المحطات بمستوى ممتاز</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive rounded-3 border">
+                            <table class="table table-hover align-middle mb-0 text-center">
+                                <thead style="background-color: #FEF3C7;" class="text-dark">
+                                    <tr>
+                                        <th class="py-3">م</th>
+                                        <th class="py-3">المجموعة</th>
+                                        <th class="py-3">رقم المحطة</th>
+                                        <th class="py-3">مستوى الشحنة المتبقي</th>
+                                        <th class="py-3">حالة الاتصال الحالي</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (int rowIndex = 0; rowIndex < _modalRows.Count; rowIndex++)
+                                    {
+                                        var row = _modalRows[rowIndex];
+                                        var isCritical = row.BatteryPercentage <= 15;
+                                        <tr>
+                                            <td class="fw-bold text-muted">@(rowIndex + 1)</td>
+                                            <td><span class="badge bg-light text-dark border px-2.5 py-1">مجموعة @row.GroupNumber</span></td>
+                                            <td><span class="fw-bold text-dark fs-14">#@row.TrapNumber</span></td>
+                                            <td style="width: 160px;">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <div class="progress flex-grow-1" style="height: 7px; border-radius: 4px;">
+                                                        <div class="progress-bar @(isCritical ? "bg-danger" : "bg-warning")" style="width: @(row.BatteryPercentage)%;"></div>
+                                                    </div>
+                                                    <span class="fs-12 fw-bold @(isCritical ? "text-danger" : "text-warning")">@row.BatteryPercentage%</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge @(row.IsConnected ? "bg-success-subtle text-success border border-success-subtle" : "bg-secondary-subtle text-secondary border border-secondary-subtle") px-3 py-1 fs-12 fw-bold">
+                                                    @(row.IsConnected ? "متصلة" : "غير متصلة")
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</AnalyticsSummaryCard>
+
+@code {
+    [Parameter] public int Value { get; set; }
+    private List<LowBatteryTrapDto>? _modalRows;
+
+    protected override void OnInitialized()
+    {
+        _ = FetchDataAsync();
+    }
+
+    private async Task FetchDataAsync()
+    {
+        if (_modalRows == null)
+        {
+            _modalRows = await Mediator.Send(new GetLowBatteryTrapsDetailQuery(30));
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task OpenModalAsync(string? modalId)
+    {
+        // Open Modal instantly on click (0ms delay)
+        await JSRuntime.InvokeVoidAsync("openAnalyticsModal", modalId, string.Empty);
+        if (_modalRows == null)
+        {
+            await FetchDataAsync();
+        }
+    }
+}

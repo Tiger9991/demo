@@ -1,0 +1,119 @@
+@using ApexCharts
+@using Application.DTOs
+@using Application.Features.Stats.Queries
+@using Application.Features.Traps.Queries
+@inject MediatR.IMediator Mediator
+@inject IJSRuntime JSRuntime
+@using Microsoft.EntityFrameworkCore;
+
+
+<div class="activity-index-bar-wrapper h-100 d-flex flex-column justify-between">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="font-headline-sm text-headline-sm mb-0">مؤشر النشاط حسب الموقع</h3>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="d-flex align-items-center justify-content-center h-100 py-5">
+            <div class="spinner-border text-primary"></div>
+        </div>
+    }
+    else if (_data == null || !_data.Any())
+    {
+        <div class="alert alert-info border-0 rounded-xl bg-slate-50 text-center py-4">لا توجد بيانات.</div>
+    }
+    else
+    {
+        <div class="flex-1 w-full position-relative">
+            <ApexChart TItem="ActivityIndexByLocationDto"
+                       Height="280"
+                       Options="_chartOptions">
+                <ApexPointSeries TItem="ActivityIndexByLocationDto"
+                                 Items="@_data"
+                                 SeriesType="SeriesType.Bar"
+                                 Name="مؤشر النشاط"
+                                 XValue='e => "المجموعة " + e.GroupNumber'
+                                 YValue="e => (decimal) e.Index" />
+            </ApexChart>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string Group { get; set; } = "";
+
+    private List<ActivityIndexByLocationDto> _data = new();
+    private string _selectedGroup = "";
+    private bool _isLoading = false;
+
+    private ApexChartOptions<ActivityIndexByLocationDto> _chartOptions = new()
+    {
+        Chart = new Chart
+        {
+            Toolbar = new Toolbar { Show = false },
+            Background = "transparent"
+        },
+        PlotOptions = new PlotOptions
+        {
+            Bar = new PlotOptionsBar
+            {
+                BorderRadius = 6,
+                ColumnWidth = "30%",
+                Distributed = true
+            }
+        },
+        Colors = new List<string> { "#10b981" }, // Default Clean Green
+        DataLabels = new DataLabels
+        {
+            Enabled = true,
+            Style = new DataLabelsStyle { FontSize = "10px" }
+        },
+        Grid = new Grid
+        {
+            Show = true,
+            BorderColor = "#f1f5f9",
+            StrokeDashArray = 4
+        },
+        Yaxis = new List<YAxis>
+        {
+            new YAxis
+            {
+                Min = 0,
+                Max = 100,
+                Labels = new YAxisLabels { Style = new AxisLabelStyle { Colors = "#64748b", FontSize = "11px" } }
+            }
+        },
+        Xaxis = new XAxis
+        {
+            Labels = new XAxisLabels { Style = new AxisLabelStyle { Colors = "#64748b", FontSize = "11px" } },
+            AxisBorder = new AxisBorder { Show = false },
+            AxisTicks = new AxisTicks { Show = false }
+        },
+        Legend = new Legend { Show = false }
+    };
+
+    private async Task LoadData()
+    {
+        _isLoading = true;
+        StateHasChanged();
+
+        _data = await Mediator.Send(new GetActivityIndexByLocationQuery(
+            string.IsNullOrEmpty(_selectedGroup) ? null : _selectedGroup
+        ));
+
+        if (_data != null && _data.Any())
+        {
+            _chartOptions.Colors = _data.Select(e => e.Color).ToList();
+        }
+
+        _isLoading = false;
+        StateHasChanged();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _selectedGroup = Group;
+        await LoadData();
+    }
+}

@@ -1,0 +1,20 @@
+@foreach (var modal in Modals)
+{
+    <AnalyticsModal Id="@modal.Id" Title="@modal.Title" />
+}
+
+@code {
+    private static readonly IReadOnlyList<AnalyticsModalItem> Modals =
+    [
+        new("networkStationsModal", "إجمالي محطات الشبكة"),
+        new("connectedStationsModal", "المحطات المتصلة"),
+        new("offlineStationsModal", "محطات دون اتصال"),
+        new("activeTodayStationsModal", "محطات سجلت نشاطاً اليوم"),
+        new("lowBatteryStationsModal", "مصائد تحتاج تغيير بطارية (≤ 25%)"),
+        new("rodentActivityModal", "إجمالي عمليات الصيد"),
+        new("refillStationsModal", "مصائد تحتاج تعبئة طعوم"),
+        new("latestAlertsModal", "سجل التنبيهات الأخيرة")
+    ];
+
+    private sealed record AnalyticsModalItem(string Id, string Title);
+}

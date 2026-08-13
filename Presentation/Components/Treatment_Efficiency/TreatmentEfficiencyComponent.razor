@@ -1,0 +1,161 @@
+@inject IJSRuntime JSRuntime
+@using System.Text.Json
+
+<section class="page-content treatment-efficiency-page" dir="rtl">
+    <!-- Top Header Area -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <h1 class="page-title mb-0">كفاءة أعمال المعالجة</h1>
+            <div class="status-badge">
+                <span class="status-pulse"></span>
+                <span>نشط الآن</span>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <div class="info-badge">
+                <span class="material-symbols-outlined text-muted" style="vertical-align: middle;">calendar_month</span>
+                <span style="font-size: 14px; font-weight: 600; color: #334155; margin-right: 4px;">آخر 30 يوم</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Row -->
+    <div class="row g-3 mb-4">
+        <!-- KPI 1 -->
+        <div class="col-md-4">
+            <div class="stitch-card position-relative overflow-hidden h-100" style="border-right: 4px solid #10b981 !important;">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <p class="text-slate-500 mb-0 fs-12 fw-semibold" style="color: #64748b;">نسبة نجاح المعالجة</p>
+                    <span class="material-symbols-outlined text-success" style="font-size: 20px;">check_circle</span>
+                </div>
+                <h3 class="fw-bold mb-0 text-slate-800" style="font-size: 1.7rem; color: #0f172a;">87.4%</h3>
+                <span class="fs-12 text-success mt-1 d-block">انخفاض في مستوى نشاط القوارض</span>
+            </div>
+        </div>
+        <!-- KPI 2 -->
+        <div class="col-md-4">
+            <div class="stitch-card position-relative overflow-hidden h-100" style="border-right: 4px solid #3b82f6 !important;">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <p class="text-slate-500 mb-0 fs-12 fw-semibold" style="color: #64748b;">الوقت المستغرق للسيطرة</p>
+                    <span class="material-symbols-outlined text-primary" style="font-size: 20px;">schedule</span>
+                </div>
+                <h3 class="fw-bold mb-0 text-slate-800" style="font-size: 1.7rem; color: #0f172a;">14 يوم</h3>
+                <span class="fs-12 text-muted mt-1 d-block">متوسط الأيام للوصول للمعدل الآمن</span>
+            </div>
+        </div>
+        <!-- KPI 3 -->
+        <div class="col-md-4">
+            <div class="stitch-card position-relative overflow-hidden h-100" style="border-right: 4px solid #ff9939 !important;">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <p class="text-slate-500 mb-0 fs-12 fw-semibold" style="color: #64748b;">العائد على الاستثمار</p>
+                    <span class="material-symbols-outlined text-warning" style="font-size: 20px;">monitoring</span>
+                </div>
+                <h3 class="fw-bold mb-0 text-slate-800" style="font-size: 1.7rem; color: #0f172a;">جيد جداً</h3>
+                <span class="fs-12 text-muted mt-1 d-block">مؤشر التكلفة مقابل النتائج المحققة</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-3 mb-4">
+        <!-- Area Chart Before vs After -->
+        <div class="col-lg-6">
+            <div class="stitch-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0">مقارنة مستوى النشاط قبل وبعد المعالجة</h5>
+                </div>
+                <div id="efficacyCompareChart"></div>
+            </div>
+        </div>
+        <!-- Decline Curve -->
+        <div class="col-lg-6">
+            <div class="stitch-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0">منحنى الهبوط الزمني للإصابة</h5>
+                </div>
+                <div id="treatmentDeclineChart"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="stitch-card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">جدول سجل خطط المعالجة</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover text-right" style="direction: rtl;">
+                <thead>
+                    <tr style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                        <th class="py-2 px-3">تاريخ البدء</th>
+                        <th class="py-2 px-3">المجموعة المستهدفة</th>
+                        <th class="py-2 px-3">الإجراء المتخذ</th>
+                        <th class="py-2 px-3">نسبة التحسن</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="align-middle">
+                        <td class="py-3 px-3 font-monospace">2023-10-15</td>
+                        <td class="py-3 px-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="w-1 h-6 bg-warning rounded-full"></div>
+                                <span>القوارض (القطاع الشمالي)</span>
+                            </div>
+                        </td>
+                        <td class="py-3 px-3">توزيع طعوم مكثف</td>
+                        <td class="py-3 px-3"><span class="badge bg-success-subtle text-success border border-success">85% تحسن</span></td>
+                    </tr>
+                    <tr class="align-middle">
+                        <td class="py-3 px-3 font-monospace">2023-10-01</td>
+                        <td class="py-3 px-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="w-1 h-6 bg-danger rounded-full"></div>
+                                <span>الحشرات الزاحفة (مستودعات)</span>
+                            </div>
+                        </td>
+                        <td class="py-3 px-3">رش متبقي الأثر</td>
+                        <td class="py-3 px-3"><span class="badge bg-success-subtle text-success border border-success">92% تحسن</span></td>
+                    </tr>
+                    <tr class="align-middle">
+                        <td class="py-3 px-3 font-monospace">2023-09-20</td>
+                        <td class="py-3 px-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="w-1 h-6 bg-secondary rounded-full"></div>
+                                <span>الآفات الطائرة (المنطقة المركزية)</span>
+                            </div>
+                        </td>
+                        <td class="py-3 px-3">صيانة مصائد ضوئية</td>
+                        <td class="py-3 px-3"><span class="badge bg-light text-dark border">45% تحسن</span></td>
+                    </tr>
+                    <tr class="align-middle">
+                        <td class="py-3 px-3 font-monospace">2023-09-05</td>
+                        <td class="py-3 px-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="w-1 h-6 bg-warning rounded-full"></div>
+                                <span>القوارض (القطاع الجنوبي)</span>
+                            </div>
+                        </td>
+                        <td class="py-3 px-3">مسح وتقييم أولي</td>
+                        <td class="py-3 px-3"><span class="badge bg-warning-subtle text-warning border border-warning">قيد التقييم</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var categories = JsonSerializer.Serialize(new[] { "الأسبوع 1", "الأسبوع 2", "الأسبوع 3", "الأسبوع 4", "الأسبوع 5" });
+            var before = JsonSerializer.Serialize(new[] { 85, 90, 75, 60, 45 });
+            var after = JsonSerializer.Serialize(new[] { 50, 40, 25, 10, 5 });
+            var values = JsonSerializer.Serialize(new[] { 90, 75, 60, 40, 20, 5, 2 });
+
+            await JSRuntime.InvokeVoidAsync("renderTreatmentEfficacyCompareChart", "efficacyCompareChart", categories, before, after);
+            await JSRuntime.InvokeVoidAsync("renderTreatmentDeclineChart", "treatmentDeclineChart", categories, values);
+        }
+    }
+}

@@ -1,0 +1,172 @@
+@inject IJSRuntime JSRuntime
+@using System.Text.Json
+
+<section class="page-content colony-composition-page" dir="rtl">
+    <!-- Top Header Area -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <h1 class="page-title mb-0">تركيب العشيرة (Colony Structure)</h1>
+            <div class="status-badge">
+                <span class="status-pulse"></span>
+                <span>نشط الآن</span>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <div class="info-badge">
+                <span class="material-symbols-outlined text-muted" style="vertical-align: middle;">calendar_month</span>
+                <span style="font-size: 14px; font-weight: 600; color: #334155; margin-right: 4px;">آخر 30 يوم</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Row -->
+    <div class="row g-3 mb-4">
+        <!-- KPI 1 -->
+        <div class="col-md-4">
+            <div class="stitch-card position-relative overflow-hidden h-100" style="border-right: 4px solid #515f74 !important;">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <p class="text-slate-500 mb-0 fs-12 fw-semibold" style="color: #64748b;">النوع السائد</p>
+                    <span class="material-symbols-outlined text-muted" style="font-size: 20px;">pest_control_rodent</span>
+                </div>
+                <h3 class="fw-bold mb-0 text-slate-800" style="font-size: 1.7rem; color: #0f172a;">جرذ نرويجي</h3>
+                <span class="fs-12 text-success mt-1 d-block">+12% عن الربع السابق</span>
+            </div>
+        </div>
+        <!-- KPI 2 -->
+        <div class="col-md-4">
+            <div class="stitch-card position-relative overflow-hidden h-100" style="border-right: 4px solid #064e3b !important;">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <p class="text-slate-500 mb-0 fs-12 fw-semibold" style="color: #64748b;">نسبة صغار السن (&lt; 10cm)</p>
+                    <span class="material-symbols-outlined text-muted" style="font-size: 20px;">scale</span>
+                </div>
+                <h3 class="fw-bold mb-0 text-slate-800" style="font-size: 1.7rem; color: #0f172a;">34.2%</h3>
+                <span class="fs-12 text-danger mt-1 d-block">مؤشر تكاثر نشط</span>
+            </div>
+        </div>
+        <!-- KPI 3 -->
+        <div class="col-md-4">
+            <div class="stitch-card position-relative overflow-hidden h-100" style="border-right: 4px solid #ff9939 !important;">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <p class="text-slate-500 mb-0 fs-12 fw-semibold" style="color: #64748b;">الانتشار الجغرافي السائد</p>
+                    <span class="material-symbols-outlined text-muted" style="font-size: 20px;">map</span>
+                </div>
+                <h3 class="fw-bold mb-0 text-slate-800" style="font-size: 1.7rem; color: #0f172a;">القطاع الشمالي</h3>
+                <span class="fs-12 text-muted mt-1 d-block">مجموعة A (أعلى كثافة)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-3 mb-4">
+        <!-- Donut Chart -->
+        <div class="col-lg-4">
+            <div class="stitch-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0">توزيع الأنواع</h5>
+                </div>
+                <div id="colonyDonutChart"></div>
+            </div>
+        </div>
+        <!-- Stacked Bar Chart -->
+        <div class="col-lg-8">
+            <div class="stitch-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0">الفئات العمرية حسب المجموعة</h5>
+                </div>
+                <div id="colonyStackedBarChart"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="stitch-card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">البؤر النشطة للأنواع</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover text-right" style="direction: rtl;">
+                <thead>
+                    <tr style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                        <th class="py-2 px-3">المجموعة</th>
+                        <th class="py-2 px-3">النوع السائد</th>
+                        <th class="py-2 px-3">إجمالي المصيدات</th>
+                        <th class="py-2 px-3">نسبة الخطورة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="align-middle" style="border-right: 3px solid #515f74;">
+                        <td class="py-3 px-3 fw-bold">مجموعة A</td>
+                        <td class="py-3 px-3"><span class="badge bg-secondary">جرذ نرويجي</span></td>
+                        <td class="py-3 px-3 font-monospace">312</td>
+                        <td class="py-3 px-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-grow-1" style="height: 6px;">
+                                    <div class="progress-bar bg-danger" style="width: 85%;"></div>
+                                </div>
+                                <span class="fw-bold text-danger">85%</span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr class="align-middle" style="border-right: 3px solid #515f74;">
+                        <td class="py-3 px-3 fw-bold">مجموعة D</td>
+                        <td class="py-3 px-3"><span class="badge bg-secondary">جرذ نرويجي</span></td>
+                        <td class="py-3 px-3 font-monospace">245</td>
+                        <td class="py-3 px-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-grow-1" style="height: 6px;">
+                                    <div class="progress-bar bg-warning" style="width: 62%;"></div>
+                                </div>
+                                <span class="fw-bold text-warning">62%</span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr class="align-middle" style="border-right: 3px solid #ff9939;">
+                        <td class="py-3 px-3 fw-bold">مجموعة B</td>
+                        <td class="py-3 px-3"><span class="badge bg-warning text-white" style="background-color: #ff9939 !important;">جرذ متسلق</span></td>
+                        <td class="py-3 px-3 font-monospace">189</td>
+                        <td class="py-3 px-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-grow-1" style="height: 6px;">
+                                    <div class="progress-bar bg-warning" style="width: 48%;"></div>
+                                </div>
+                                <span class="fw-bold text-warning">48%</span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr class="align-middle" style="border-right: 3px solid #bfc9c3;">
+                        <td class="py-3 px-3 fw-bold">مجموعة C</td>
+                        <td class="py-3 px-3"><span class="badge bg-light text-dark border">فأر منزلي</span></td>
+                        <td class="py-3 px-3 font-monospace">142</td>
+                        <td class="py-3 px-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-grow-1" style="height: 6px;">
+                                    <div class="progress-bar bg-success" style="width: 35%;"></div>
+                                </div>
+                                <span class="fw-bold text-success">35%</span>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var labels = JsonSerializer.Serialize(new[] { "نرويجي", "متسلق", "منزلي" });
+            var values = JsonSerializer.Serialize(new[] { 686, 374, 188 });
+
+            var categories = JsonSerializer.Serialize(new[] { "مجموعة A", "مجموعة B", "مجموعة C", "مجموعة D", "مجموعة E" });
+            var young = JsonSerializer.Serialize(new[] { 40, 20, 15, 35, 10 });
+            var medium = JsonSerializer.Serialize(new[] { 30, 50, 25, 40, 20 });
+            var adult = JsonSerializer.Serialize(new[] { 30, 30, 60, 25, 70 });
+
+            await JSRuntime.InvokeVoidAsync("renderColonyCompositionDonutChart", "colonyDonutChart", labels, values);
+            await JSRuntime.InvokeVoidAsync("renderColonyCompositionStackedBarChart", "colonyStackedBarChart", categories, young, medium, adult);
+        }
+    }
+}

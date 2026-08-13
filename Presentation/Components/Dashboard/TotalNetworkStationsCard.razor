@@ -1,0 +1,100 @@
+@using MediatR
+@using Application.Features.Traps.Queries
+@using Application.DTOs
+@inject IMediator Mediator
+@inject IJSRuntime JSRuntime
+
+<AnalyticsSummaryCard Title="إجمالي محطات الشبكة"
+                      Value="@Value"
+                      Subtext="@($"منها {OfflineCount} محطة غير متصلة")"
+                      Icon="message-circle-outline"
+                      CardClass="bg-info-subtle"
+                      AvatarClass="bg-info"
+                      InsetClass="inset-info"
+                      ModalId="modal_total_network"
+                      OnSelected="@OpenModalAsync">
+    <!-- Modal -->
+    <div class="modal fade" id="modal_total_network" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">إجمالي محطات الشبكة</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" dir="rtl">
+                    @if (_modalRows == null)
+                    {
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    }
+                    else if (_modalRows.Count == 0)
+                    {
+                        <div class="text-center py-5">
+                            <i class="mdi mdi-database-off-outline text-muted fs-1 mb-3 d-block" style="font-size: 3rem;"></i>
+                            <p class="text-muted mb-0 fs-16">لا يوجد بيانات</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover table-bordered align-middle mb-0 text-center">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>م</th>
+                                        <th>رقم العميل</th>
+                                        <th>اسم العميل</th>
+                                        <th>مجموعة المحطة</th>
+                                        <th>رقم المحطة</th>
+                                        <th>الوصف</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (int rowIndex = 0; rowIndex < _modalRows.Count; rowIndex++)
+                                    {
+                                        var row = _modalRows[rowIndex];
+                                        <tr>
+                                            <td>@(rowIndex + 1)</td>
+                                            <td>
+                                                <span class="badge bg-info-subtle text-info fw-semibold">
+                                                    @row.CustomerNumber
+                                                </span>
+                                            </td>
+                                            <td class="fw-semibold">@row.CustomerName</td>
+                                            <td><span class="badge bg-primary-subtle text-primary">@row.TrapGroup</span></td>
+                                            <td><span class="badge bg-dark-subtle text-dark">@row.TrapNumber</span></td>
+                                            <td class="text-muted fs-13">@(row.Description ?? "-")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</AnalyticsSummaryCard>
+
+@code {
+    [Parameter] public int Value { get; set; }
+    [Parameter] public int OfflineCount { get; set; }
+    private List<NetworkStationDto>? _modalRows;
+
+    private async Task OpenModalAsync(string? modalId)
+    {
+        Console.WriteLine($"[DEBUG] TotalNetworkStationsCard OpenModalAsync called. modalId: {modalId}");
+        if (_modalRows == null)
+        {
+            Console.WriteLine("[DEBUG] Fetching traps for TotalNetworkStationsCard modal...");
+            _modalRows = await Mediator.Send(new GetNetworkStationsQuery());
+            Console.WriteLine($"[DEBUG] Fetched {_modalRows.Count} traps.");
+            StateHasChanged();
+        }
+        Console.WriteLine("[DEBUG] Invoking openAnalyticsModal JS function...");
+        await JSRuntime.InvokeVoidAsync("openAnalyticsModal", modalId, string.Empty);
+        Console.WriteLine("[DEBUG] openAnalyticsModal JS function invoked.");
+    }
+}

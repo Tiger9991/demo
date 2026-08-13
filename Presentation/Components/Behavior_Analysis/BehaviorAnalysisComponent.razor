@@ -1,0 +1,123 @@
+@inject IJSRuntime JSRuntime
+@using System.Text.Json
+
+<section class="page-content behavior-analysis-page" dir="rtl">
+    <!-- Top Header Area -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <h1 class="page-title mb-0">تحليل السلوك (Behavior Analysis)</h1>
+            <div class="status-badge">
+                <span class="status-pulse"></span>
+                <span>نشط الآن</span>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <div class="info-badge">
+                <span class="material-symbols-outlined text-muted" style="vertical-align: middle;">calendar_month</span>
+                <span style="font-size: 14px; font-weight: 600; color: #334155; margin-right: 4px;">آخر 30 يوم</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Row -->
+    <div class="row g-3 mb-4">
+        <!-- KPI 1 -->
+        <div class="col-md-4">
+            <div class="stitch-card position-relative overflow-hidden h-100" style="border-right: 4px solid #064e3b !important;">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <p class="text-slate-500 mb-0 fs-12 fw-semibold" style="color: #64748b;">ساعة الذروة</p>
+                    <span class="material-symbols-outlined text-muted" style="font-size: 20px;">schedule</span>
+                </div>
+                <h3 class="fw-bold mb-0 text-slate-800 font-monospace" style="font-size: 1.7rem; color: #0f172a;">02:00 AM</h3>
+                <span class="fs-12 text-success mt-1 d-block">ارتفاع بنسبة 12% عن الأسبوع الماضي</span>
+            </div>
+        </div>
+        <!-- KPI 2 -->
+        <div class="col-md-4">
+            <div class="stitch-card position-relative overflow-hidden h-100" style="border-right: 4px solid #515f74 !important;">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <p class="text-slate-500 mb-0 fs-12 fw-semibold" style="color: #64748b;">النشاط الليلي vs النهاري</p>
+                    <span class="material-symbols-outlined text-muted" style="font-size: 20px;">routine</span>
+                </div>
+                <h3 class="fw-bold mb-0 text-slate-800" style="font-size: 1.5rem; color: #0f172a;">85% ليلاً / 15% نهاراً</h3>
+                <div class="progress mt-2" style="height: 6px;">
+                    <div class="progress-bar bg-secondary" style="width: 85%;"></div>
+                    <div class="progress-bar bg-warning" style="width: 15%;"></div>
+                </div>
+            </div>
+        </div>
+        <!-- KPI 3 -->
+        <div class="col-md-4">
+            <div class="stitch-card position-relative overflow-hidden h-100" style="border-right: 4px solid #ff9939 !important;">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <p class="text-slate-500 mb-0 fs-12 fw-semibold" style="color: #64748b;">متوسط فترة الاستجابة</p>
+                    <span class="material-symbols-outlined text-muted" style="font-size: 20px;">timer</span>
+                </div>
+                <h3 class="fw-bold mb-0 text-slate-800" style="font-size: 1.7rem; color: #0f172a;">4.2 ساعة</h3>
+                <span class="fs-12 text-muted mt-1 d-block">منذ تفعيل المصيدة لأول صيد</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-3 mb-4">
+        <!-- Heatmap -->
+        <div class="col-lg-7">
+            <div class="stitch-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0">الخريطة الحرارية للنشاط خلال الأسبوع</h5>
+                </div>
+                <div id="behaviorHeatmapChart"></div>
+            </div>
+        </div>
+        <!-- Line Chart -->
+        <div class="col-lg-5">
+            <div class="stitch-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0">اتجاهات النشاط على مدار 24 ساعة</h5>
+                </div>
+                <div id="behaviorLineChart"></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var heatmapData = new[]
+            {
+                new { name = "السبت", data = GenerateDayData() },
+                new { name = "الأحد", data = GenerateDayData() },
+                new { name = "الاثنين", data = GenerateDayData() },
+                new { name = "الثلاثاء", data = GenerateDayData() },
+                new { name = "الأربعاء", data = GenerateDayData() },
+                new { name = "الخميس", data = GenerateDayData() },
+                new { name = "الجمعة", data = GenerateDayData() }
+            };
+
+            var heatmapJson = JsonSerializer.Serialize(heatmapData);
+
+            var categories = JsonSerializer.Serialize(new[] { "12 AM", "3 AM", "6 AM", "9 AM", "12 PM", "3 PM", "6 PM", "9 PM" });
+            var values = JsonSerializer.Serialize(new[] { 85, 92, 12, 5, 8, 15, 45, 78 });
+
+            await JSRuntime.InvokeVoidAsync("renderBehaviorHeatmapChart", "behaviorHeatmapChart", heatmapJson);
+            await JSRuntime.InvokeVoidAsync("renderBehaviorLineChart", "behaviorLineChart", categories, values);
+        }
+    }
+
+    private object[] GenerateDayData()
+    {
+        var random = new Random();
+        var data = new object[24];
+        for (int i = 0; i < 24; i++)
+        {
+            // Higher activity during night hours (8 PM - 4 AM)
+            int val = (i >= 20 || i <= 4) ? random.Next(10, 30) : random.Next(0, 5);
+            data[i] = new { x = $"{i:D2}:00", y = val };
+        }
+        return data;
+    }
+}

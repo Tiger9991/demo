@@ -1,0 +1,205 @@
+<header id="page-topbar" class="bg-white border-bottom shadow-sm" style="height: 70px; z-index: 1000;">
+    <div class="navbar-header d-flex align-items-center justify-content-between h-100 px-4" dir="rtl">
+
+        <!-- Right Side (RTL): Client Dropdown List / Facility / Building / Zone Breadcrumb Bar -->
+        <div class="d-flex align-items-center gap-4">
+            
+            <!-- CLIENT DROPDOWN LIST (Droplist with Rich Client Details) -->
+            <div class="dropdown d-inline-block">
+                <button type="button" 
+                        class="btn btn-ghost-primary p-1.5 border-0 d-flex align-items-center gap-1.5 cursor-pointer dropdown-toggle shadow-none" 
+                        id="clientSelectDropdown" 
+                        data-bs-toggle="dropdown" 
+                        aria-haspopup="true" 
+                        aria-expanded="false">
+                    <span class="fw-bold text-dark fs-14">العميل:</span>
+                    <span class="fw-extrabold text-primary fs-14 me-0.5" style="color: #1B365D !important;">@SelectedClient.Name</span>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill fs-10 px-2 py-0.5 ms-1">@SelectedClient.Code</span>
+                    <i class="mdi mdi-chevron-down text-dark fs-16 ms-1"></i>
+                </button>
+
+                <!-- CLIENT DROPLIST POPUP MENU -->
+                <div class="dropdown-menu dropdown-menu-start shadow-lg border-0 rounded-3 p-0 mt-2" aria-labelledby="clientSelectDropdown" style="width: 380px; max-width: 90vw;" dir="rtl">
+                    
+                    <!-- Selected Client Detailed Profile Summary Card -->
+                    <div class="p-3 border-bottom rounded-top-3" style="background-color: #F8FAFC;">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="avatar-xs rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold fs-12" style="width: 32px; height: 32px; background-color: #1B365D !important;">
+                                    TSI
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold mb-0 text-dark fs-13" style="color: #1B365D !important;">@SelectedClient.Name</h6>
+                                    <span class="fs-11 text-muted">@SelectedClient.Sector</span>
+                                </div>
+                            </div>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 fs-11 fw-bold">
+                                عقد نشط
+                            </span>
+                        </div>
+
+                        <!-- Client Contact Person Info -->
+                        <div class="mt-2 pt-2 border-top d-flex align-items-center justify-content-between fs-11">
+                            <span class="text-muted fw-semibold">مسؤول الموقع المباشر:</span>
+                            <span class="fw-bold text-dark bg-white px-2.5 py-1 rounded border shadow-2xs">@SelectedClient.ContactPerson</span>
+                        </div>
+                    </div>
+
+                    <!-- Select Other Client Account Title -->
+                    <div class="px-3 py-2 bg-light border-bottom d-flex align-items-center justify-content-between">
+                        <span class="fs-11 fw-bold text-muted text-uppercase">تبديل حساب العميل (Switch Client)</span>
+                        <span class="fs-10 text-muted">@ClientsList.Count عملاء مسجلين</span>
+                    </div>
+
+                    <!-- Client Accounts List (Selectable Items) -->
+                    <div class="py-1" style="max-height: 220px; overflow-y: auto;">
+                        @foreach (var client in ClientsList)
+                        {
+                            var isSelected = client.Id == SelectedClient.Id;
+                            <button type="button" 
+                                    class="dropdown-item d-flex align-items-center justify-content-between py-2.5 px-3 border-bottom-subtle transition-all @(isSelected ? "bg-primary-subtle" : "")"
+                                    @onclick="() => SelectClient(client)">
+                                <div>
+                                    <div class="fw-bold fs-13 @(isSelected ? "text-primary" : "text-dark")">@client.Name</div>
+                                    <div class="fs-11 text-muted">@client.Sector</div>
+                                </div>
+                                @if (isSelected)
+                                {
+                                    <span class="badge bg-primary text-white rounded-circle p-1">
+                                        <i class="mdi mdi-check fs-12"></i>
+                                    </span>
+                                }
+                            </button>
+                        }
+                    </div>
+
+                    <!-- Dropdown Footer Action -->
+                    <div class="p-2 border-top text-center bg-light rounded-bottom-3">
+                        <a href="javascript:void(0)" class="text-primary fs-12 fw-bold text-decoration-none d-flex align-items-center justify-content-center gap-1">
+                            <i class="mdi mdi-plus-circle-outline fs-16"></i>
+                            <span>إضافة عميل جديد / عرض بيانات العقد بالكامل</span>
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Facility Active Tab (With Gold Underline) -->
+            <div class="position-relative py-3 cursor-pointer">
+                <div class="d-flex align-items-center gap-1">
+                    <span class="fw-bold text-dark fs-14">المنشأة:</span>
+                    <span class="fw-extrabold text-primary fs-14" style="color: #1B365D !important;">العبور</span>
+                </div>
+                <!-- Gold Active Underline -->
+                <div class="position-absolute bottom-0 start-0 end-0" style="height: 3px; background-color: #B89764; border-radius: 3px 3px 0 0;"></div>
+            </div>
+
+            <!-- Building -->
+            <div class="text-center px-2 cursor-pointer">
+                <div class="text-muted fs-11 fw-semibold mb-0" style="line-height: 1.1;">مبنى</div>
+                <div class="fw-bold text-dark fs-13">أ</div>
+            </div>
+
+            <!-- Zone -->
+            <div class="text-center px-2 cursor-pointer">
+                <div class="text-muted fs-11 fw-semibold mb-0" style="line-height: 1.1;">المنطقة</div>
+                <div class="fw-bold text-dark fs-13">4</div>
+            </div>
+        </div>
+
+        <!-- Left Side (RTL): Actions & Tools Dropdown Menu (Droplist) -->
+        <div class="dropdown d-inline-block me-auto ms-0">
+            <button type="button" 
+                    class="btn btn-light bg-light border d-flex align-items-center gap-2 px-3 py-1.5 rounded-pill shadow-sm cursor-pointer dropdown-toggle" 
+                    id="topbar-tools-dropdown" 
+                    data-bs-toggle="dropdown" 
+                    aria-haspopup="true" 
+                    aria-expanded="false"
+                    style="background-color: #F8FAFC !important;">
+                
+                <img src="assets/images/users/avatar-9.png" alt="Charlie Stone" class="rounded-circle border" style="width: 32px; height: 32px; object-fit: cover;" />
+                <span class="fw-bold text-dark fs-13 ms-1">أدوات النظام والحساب</span>
+                <i class="mdi mdi-chevron-down text-muted fs-16"></i>
+            </button>
+
+            <!-- Dropdown Menu Items -->
+            <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3 py-2 mt-2" aria-labelledby="topbar-tools-dropdown" style="min-width: 270px;" dir="rtl">
+                
+                <!-- Dropdown Header: User Info -->
+                <div class="px-3 py-2.5 border-bottom bg-light-subtle d-flex align-items-center gap-2.5">
+                    <img src="assets/images/users/avatar-9.png" alt="Charlie Stone" class="rounded-circle border" style="width: 40px; height: 40px; object-fit: cover;" />
+                    <div>
+                        <h6 class="fw-bold mb-0 text-dark fs-13">Charlie Stone</h6>
+                        <span class="fs-11 text-muted fw-semibold">مدير المنظومة الميدانية</span>
+                    </div>
+                </div>
+
+                <!-- Dropdown Item: Quick Search Box -->
+                <div class="p-2.5 border-bottom bg-white">
+                    <div class="position-relative">
+                        <input type="text" class="form-control bg-light border-0 rounded-2 py-1.5 pe-3 ps-5 text-dark fs-12" placeholder="بحث سريع بالمحطات..." style="background-color: #F1F5F9 !important;" />
+                        <i class="mdi mdi-magnify position-absolute top-50 start-0 translate-middle-y ms-2.5 text-muted fs-16"></i>
+                    </div>
+                </div>
+
+                <!-- Dropdown Item: Notifications -->
+                <a class="dropdown-item d-flex align-items-center justify-content-between py-2 px-3 text-dark fs-13" href="javascript:void(0)">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="mdi mdi-bell-outline text-success fs-18"></i>
+                        <span>التنبيهات الإشعارية</span>
+                    </div>
+                    <span class="badge bg-danger rounded-pill fs-10 px-2 py-0.5">3 جديدة</span>
+                </a>
+
+                <!-- Dropdown Item: Settings -->
+                <a class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 text-dark fs-13" href="javascript:void(0)">
+                    <i class="mdi mdi-cog-outline text-primary fs-18"></i>
+                    <span>إعدادات النظام والمحطات</span>
+                </a>
+
+                <!-- Dropdown Divider -->
+                <div class="dropdown-divider my-1"></div>
+
+                <!-- Dropdown Item: Logout -->
+                <a class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 text-danger fs-13 fw-semibold" href="javascript:void(0)">
+                    <i class="mdi mdi-logout text-danger fs-18"></i>
+                    <span>تسجيل الخروج</span>
+                </a>
+            </div>
+        </div>
+
+    </div>
+</header>
+
+@code {
+    private ClientAccount SelectedClient;
+
+    private readonly List<ClientAccount> ClientsList =
+    [
+        new(1, "شركة الخدمات اللوجستية العالمية", "CLI-2026-884", "قطاع التخزين والخدمات اللوجستية", 4, 150, "م. أحمد عبد الفتاح"),
+        new(2, "شركة الأغذية والمشروبات الوطنية", "CLI-2026-512", "القطاع الغذائي والصناعي", 6, 210, "أ. محمود القاضي"),
+        new(3, "مجموعة الصناعات الطبية والدوائية", "CLI-2026-109", "القطاع الطبي والصيدلي", 3, 95, "د. سارة العلي"),
+        new(4, "مجمع المستودعات المركزية بالملاحة", "CLI-2026-733", "سلاسل الإمداد والتطوير", 5, 180, "م. حسن الشريف")
+    ];
+
+    public DashboardTopbar()
+    {
+        SelectedClient = ClientsList[0];
+    }
+
+    private void SelectClient(ClientAccount client)
+    {
+        SelectedClient = client;
+        StateHasChanged();
+    }
+
+    private sealed record ClientAccount(
+        int Id, 
+        string Name, 
+        string Code, 
+        string Sector, 
+        int FacilitiesCount, 
+        int TotalTraps, 
+        string ContactPerson
+    );
+}

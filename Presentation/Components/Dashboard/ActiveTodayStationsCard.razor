@@ -1,0 +1,200 @@
+@using MediatR
+@using Application.Features.Stats.Queries
+@using Application.DTOs
+@using Application.Common.Helpers
+@inject IMediator Mediator
+@inject IJSRuntime JSRuntime
+
+<AnalyticsSummaryCard Title="محطات نشطة خلال اليوم"
+                      Value="@Value"
+                      TotalFleet="20"
+                      BadgeText="15% حركة اليوم"
+                      Subtext="ذروة النشاط: 02:00 صباحاً (3 التقاطات حركية)"
+                      ProgressPercentage="15"
+                      AccentColor="#06B6D4"
+                      MdiIcon="pulse"
+                      ModalId="modal_active_today"
+                      OnSelected="@OpenModalAsync">
+    <!-- Modal (Unique Cyan Activity Theme with Graphical Visualizations) -->
+    <div class="modal fade" id="modal_active_today" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <!-- Modal Header -->
+                <div class="modal-header border-bottom py-3 px-4" style="background-color: #ECFEFF; border-bottom: 2px solid #06B6D4 !important;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="p-2.5 rounded-circle text-white shadow-sm d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background-color: #0891B2 !important;">
+                            <i class="mdi mdi-pulse fs-20"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title fw-bold mb-0 text-dark" style="color: #0E7490 !important;">المحطات النشطة خلال اليوم</h5>
+                            <span class="fs-12 text-muted">تحليلات المخطط الزمني للساعات والتقاط الحركة النشطة اليوم</span>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 me-auto ms-0">
+                        <span class="badge text-white px-3 py-1.5 rounded-pill fs-12 fw-bold shadow-sm" style="background-color: #0891B2 !important;">
+                            @Value نشاط رُصد اليوم
+                        </span>
+                        <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="modal-body p-4" dir="rtl">
+                    
+                    <!-- GRAPHICAL VISUALIZATIONS SECTION (الرسم البياني لساعات النشاط اليومي) -->
+                    <div class="row g-3 mb-4">
+                        <!-- Chart 1: Hourly Peak Timeline Visual Bar Chart -->
+                        <div class="col-md-8">
+                            <div class="p-3 rounded-3 border bg-white shadow-sm h-100">
+                                <div class="d-flex align-items-center justify-content-between mb-3">
+                                    <h6 class="fw-bold text-dark mb-0 fs-13 d-flex align-items-center gap-2">
+                                        <i class="mdi mdi-chart-timeline-variant text-info fs-16" style="color: #0891B2 !important;"></i>
+                                        <span>توزيع ساعات النشاط على مدار الـ 24 ساعة (Hourly Activity Spikes)</span>
+                                    </h6>
+                                    <span class="badge bg-info-subtle text-info fs-11 border border-info-subtle">ذروة النشاط: 02:00 صباحاً</span>
+                                </div>
+                                <!-- Visual Bar Chart for 24h Peaks -->
+                                <div class="d-flex align-items-end justify-content-between pt-2 pb-1 px-2 border-bottom" style="height: 95px;">
+                                    <div class="d-flex flex-column align-items-center" style="width: 12%;">
+                                        <div class="bg-info-subtle w-100 rounded-top" style="height: 15px;"></div>
+                                        <span class="fs-10 text-muted mt-1">00:00</span>
+                                    </div>
+                                    <div class="d-flex flex-column align-items-center" style="width: 12%;">
+                                        <div class="bg-info w-100 rounded-top" style="height: 70px; background-color: #0891B2 !important;"></div>
+                                        <span class="fs-10 text-dark fw-bold mt-1">02:00 AM</span>
+                                    </div>
+                                    <div class="d-flex flex-column align-items-center" style="width: 12%;">
+                                        <div class="bg-info-subtle w-100 rounded-top" style="height: 25px;"></div>
+                                        <span class="fs-10 text-muted mt-1">04:00</span>
+                                    </div>
+                                    <div class="d-flex flex-column align-items-center" style="width: 12%;">
+                                        <div class="bg-info w-100 rounded-top opacity-75" style="height: 45px; background-color: #06B6D4 !important;"></div>
+                                        <span class="fs-10 text-dark fw-bold mt-1">06:00 AM</span>
+                                    </div>
+                                    <div class="d-flex flex-column align-items-center" style="width: 12%;">
+                                        <div class="bg-info-subtle w-100 rounded-top" style="height: 10px;"></div>
+                                        <span class="fs-10 text-muted mt-1">09:00</span>
+                                    </div>
+                                    <div class="d-flex flex-column align-items-center" style="width: 12%;">
+                                        <div class="bg-info w-100 rounded-top opacity-75" style="height: 40px; background-color: #0891B2 !important;"></div>
+                                        <span class="fs-10 text-dark fw-bold mt-1">13:00 PM</span>
+                                    </div>
+                                    <div class="d-flex flex-column align-items-center" style="width: 12%;">
+                                        <div class="bg-info-subtle w-100 rounded-top" style="height: 12px;"></div>
+                                        <span class="fs-10 text-muted mt-1">18:00</span>
+                                    </div>
+                                    <div class="d-flex flex-column align-items-center" style="width: 12%;">
+                                        <div class="bg-info-subtle w-100 rounded-top" style="height: 20px;"></div>
+                                        <span class="fs-10 text-muted mt-1">22:00</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Chart 2: Activity Summary Metrics -->
+                        <div class="col-md-4">
+                            <div class="p-3 rounded-3 border bg-white shadow-sm h-100 d-flex flex-column justify-content-between">
+                                <h6 class="fw-bold text-dark mb-2 fs-13 d-flex align-items-center gap-2">
+                                    <i class="mdi mdi-fire text-info fs-16" style="color: #0891B2 !important;"></i>
+                                    <span>معدل شدة النشاط اليومي</span>
+                                </h6>
+                                <div class="text-center my-auto">
+                                    <span class="badge bg-info-subtle text-info border border-info-subtle px-3 py-1.5 fs-13 fw-bold mb-2">نشاط معتدل اليوم</span>
+                                    <h3 class="fw-extrabold text-dark mb-0 font-outfit" style="color: #0E7490 !important;">@Value حركات</h3>
+                                    <span class="fs-11 text-muted d-block mt-1">موزعة على المحطات النشطة</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DATA TABLE SECTION (الجدول التفصيلي) -->
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h6 class="fw-bold text-dark mb-0 fs-14">جدول تفاصيل المحطات النشطة</h6>
+                    </div>
+
+                    @if (_modalRows == null)
+                    {
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-info" role="status">
+                                <span class="visually-hidden">جاري التحميل...</span>
+                            </div>
+                        </div>
+                    }
+                    else if (_modalRows.Count == 0)
+                    {
+                        <div class="text-center py-5">
+                            <i class="mdi mdi-sleep text-muted fs-1 mb-3 d-block" style="font-size: 3rem;"></i>
+                            <p class="text-muted mb-0 fs-16 fw-semibold">لا توجد محطات سجلت نشاطاً اليوم</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive rounded-3 border">
+                            <table class="table table-hover align-middle mb-0 text-center">
+                                <thead style="background-color: #ECFEFF;" class="text-dark">
+                                    <tr>
+                                        <th class="py-3">م</th>
+                                        <th class="py-3">المجموعة</th>
+                                        <th class="py-3">رقم المحطة</th>
+                                        <th class="py-3">حالة النشاط</th>
+                                        <th class="py-3">شحنة البطارية</th>
+                                        <th class="py-3">آخر التقاط حركة</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (int rowIndex = 0; rowIndex < _modalRows.Count; rowIndex++)
+                                    {
+                                        var row = _modalRows[rowIndex];
+                                        <tr>
+                                            <td class="fw-bold text-muted">@(rowIndex + 1)</td>
+                                            <td><span class="badge bg-light text-dark border px-2.5 py-1">مجموعة @row.TrapGroup</span></td>
+                                            <td><span class="fw-bold text-dark fs-14">#@row.TrapNumber</span></td>
+                                            <td>
+                                                <span class="badge bg-info-subtle text-info border border-info-subtle px-3 py-1 fs-12 fw-bold d-inline-flex align-items-center gap-1.5">
+                                                    <span class="spinner-grow spinner-grow-sm text-info" style="width: 6px; height: 6px;" role="status"></span>
+                                                    نشطة اليوم
+                                                </span>
+                                            </td>
+                                            <td><span class="fw-bold text-dark">@row.BatteryPercentage%</span></td>
+                                            <td class="fs-12 text-muted fw-bold">@(row.LastCaptureTime.ToEgyptianArabic12Hour())</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</AnalyticsSummaryCard>
+
+@code {
+    [Parameter] public int Value { get; set; }
+    private List<ActiveTrapTodayDetailDto>? _modalRows;
+
+    protected override void OnInitialized()
+    {
+        _ = FetchDataAsync();
+    }
+
+    private async Task FetchDataAsync()
+    {
+        if (_modalRows == null)
+        {
+            var activeTodayResult = await Mediator.Send(new GetActiveTrapsTodayQuery());
+            _modalRows = activeTodayResult.ActiveTrapsDetails;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task OpenModalAsync(string? modalId)
+    {
+        // Open Modal instantly on click (0ms delay)
+        await JSRuntime.InvokeVoidAsync("openAnalyticsModal", modalId, string.Empty);
+        if (_modalRows == null)
+        {
+            await FetchDataAsync();
+        }
+    }
+}

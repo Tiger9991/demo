@@ -1,0 +1,86 @@
+@page "/rodent-activity"
+@rendermode InteractiveServer
+@using Presentation.Components.Rat_Activity
+@using Application.Features.Traps.Queries
+@inject MediatR.IMediator Mediator
+
+
+<PageTitle>نشاط القوارض</PageTitle>
+
+<section class="rodent-activity-page" dir="rtl">
+    <!-- Top Filter Area (Stitch style) -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <h1 class="page-title mb-0">نشاط القوارض</h1>
+            <div class="status-badge">
+                <span class="status-pulse"></span>
+                <span>نشط الآن</span>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <!-- Last 30 days badge -->
+            <div class="info-badge">
+                <span class="material-symbols-outlined text-muted">calendar_month</span>
+                <span>آخر 30 يوم</span>
+            </div>
+            
+            <!-- Global Group Selector Dropdown -->
+            <div class="info-badge p-0 overflow-hidden d-flex align-items-center">
+                <span class="material-symbols-outlined text-muted ps-3">group_work</span>
+                <select @bind="_selectedGroup" class="filter-select-input">
+                    <option value="">كل المجموعات</option>
+                    @foreach (var group in _groups)
+                    {
+                        <option value="@group">المجموعة @group</option>
+                    }
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- 1. KPI Grid (4 Columns) -->
+    <div class="kpi-grid mb-4">
+        <MonthlyVisits Group="@_selectedGroup"></MonthlyVisits>
+        <AverageDailyVisits Group="@_selectedGroup"></AverageDailyVisits>
+        <ActivityByHour Group="@_selectedGroup"></ActivityByHour>
+        <PeakHourDetails Group="@_selectedGroup"></PeakHourDetails>
+    </div>
+
+    <!-- 2. Charts Section (VisitsOverTime & VisitDistributionDonut) -->
+    <div class="charts-grid mb-4">
+        <div class="chart-col-wide">
+            <div class="stitch-card h-100">
+                <VisitsOverTime Group="@_selectedGroup" />
+            </div>
+        </div>
+        <div class="chart-col-narrow">
+            <div class="stitch-card h-100">
+                <VisitDistributionDonut Group="@_selectedGroup"></VisitDistributionDonut>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Detailed Insights (ActivityIndexBarChart & ActivityIndexWithBadges) -->
+    <div class="insights-grid">
+        <div class="insight-col">
+            <div class="stitch-card h-100">
+                <ActivityIndexBarChart Group="@_selectedGroup" />
+            </div>
+        </div>
+        <div class="insight-col">
+            <div class="stitch-card h-100">
+                <ActivityIndexWithBadges Group="@_selectedGroup" />
+            </div>
+        </div>
+    </div>
+</section>
+
+@code {
+    private List<string> _groups = new();
+    private string _selectedGroup = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _groups = await Mediator.Send(new GetDistinctGroupNumbersQuery());
+    }
+}

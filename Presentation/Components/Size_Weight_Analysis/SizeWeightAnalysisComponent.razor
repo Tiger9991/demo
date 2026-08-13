@@ -1,0 +1,209 @@
+@inject IJSRuntime JSRuntime
+@using System.Text.Json
+
+<section class="page-content size-weight-analysis-page" dir="rtl">
+    <!-- Top Header Area -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <h1 class="page-title mb-0">تحليل الأحجام والأوزان</h1>
+            <div class="status-badge">
+                <span class="status-pulse"></span>
+                <span>نشط الآن</span>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <div class="info-badge">
+                <span class="material-symbols-outlined text-muted" style="vertical-align: middle;">calendar_month</span>
+                <span style="font-size: 14px; font-weight: 600; color: #334155; margin-right: 4px;">آخر 30 يوم</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Row -->
+    <div class="stitch-card mb-4">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label fw-semibold text-muted fs-12 mb-2">مجموعة المصائد</label>
+                <select class="form-select" @bind="_selectedGroup" style="border-radius: 8px; border: 1px solid #e2e8f0; font-size: 14px;">
+                    <option value="">الكل</option>
+                    <option value="A">المجموعة A</option>
+                    <option value="B">المجموعة B</option>
+                    <option value="C">المجموعة C</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-semibold text-muted fs-12 mb-2">نوع القارض</label>
+                <select class="form-select" @bind="_selectedType" style="border-radius: 8px; border: 1px solid #e2e8f0; font-size: 14px;">
+                    <option value="">الكل</option>
+                    <option value="جرذ منزلي">جرذ منزلي</option>
+                    <option value="نرويجي">نرويجي</option>
+                    <option value="متسلق">متسلق</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold text-muted fs-12 mb-2">الفترة الزمنية</label>
+                <div class="info-badge w-100 d-flex align-items-center" style="border-radius: 8px; height: 38px;">
+                    <span class="material-symbols-outlined text-muted ps-2" style="font-size: 18px;">calendar_today</span>
+                    <span class="fs-14 fw-semibold text-slate-700">آخر 30 يوم</span>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <button class="btn-details w-100 d-flex align-items-center justify-content-center gap-1" style="height: 38px; border-radius: 8px; font-weight: 600;" @onclick="ApplyFilters">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">filter_alt</span>
+                    <span>تطبيق الفلاتر</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Row -->
+    <div class="row g-3 mb-4">
+        <!-- KPI 1 -->
+        <div class="col-md-3">
+            <div class="stitch-card position-relative overflow-hidden h-100" style="border-right: 4px solid #3b82f6 !important;">
+                <div class="d-flex justify-content-between align-items-start w-100">
+                    <div>
+                        <p class="text-slate-500 mb-1 fs-12 fw-semibold" style="color: #64748b;">متوسط الوزن</p>
+                        <h3 class="fw-bold mb-0 text-slate-800 font-outfit" style="font-size: 1.75rem; color: #0f172a;">185 جم</h3>
+                    </div>
+                    <span class="fs-11 fw-medium px-2 py-0.5 rounded" style="background-color: #d1fae5; color: #065f46; font-size: 11px;">
+                        +5%
+                    </span>
+                </div>
+            </div>
+        </div>
+        <!-- KPI 2 -->
+        <div class="col-md-3">
+            <div class="stitch-card position-relative overflow-hidden h-100" style="border-right: 4px solid #10b981 !important;">
+                <div>
+                    <p class="text-slate-500 mb-1 fs-12 fw-semibold" style="color: #64748b;">متوسط الطول</p>
+                    <h3 class="fw-bold mb-0 text-slate-800 font-outfit" style="font-size: 1.75rem; color: #0f172a;">22 سم</h3>
+                </div>
+            </div>
+        </div>
+        <!-- KPI 3 -->
+        <div class="col-md-3">
+            <div class="stitch-card position-relative overflow-hidden h-100" style="border-right: 4px solid #f97316 !important;">
+                <div>
+                    <p class="text-slate-500 mb-1 fs-12 fw-semibold" style="color: #64748b;">أكبر حجم مرصد</p>
+                    <h3 class="fw-bold mb-0 text-slate-800 font-outfit" style="font-size: 1.5rem; color: #0f172a;">320 جم | 28 سم</h3>
+                    <span class="fs-12 text-muted mt-1 d-block">المجموعة أ</span>
+                </div>
+            </div>
+        </div>
+        <!-- KPI 4 -->
+        <div class="col-md-3">
+            <div class="stitch-card position-relative overflow-hidden h-100" style="border-right: 4px solid #dc3545 !important;">
+                <div>
+                    <p class="text-slate-500 mb-1 fs-12 fw-semibold" style="color: #64748b;">أصغر حجم (حديثي الولادة)</p>
+                    <h3 class="fw-bold mb-0 text-slate-800 font-outfit" style="font-size: 1.5rem; color: #0f172a;">15 جم | 5 سم</h3>
+                    <span class="fs-12 text-muted mt-1 d-block">رصد تكاثر</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="row g-3 mb-4">
+        <!-- Scatter Plot -->
+        <div class="col-lg-6">
+            <div class="stitch-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0">مخطط التشتت: الطول مقابل الوزن</h5>
+                </div>
+                <div id="scatterChart"></div>
+            </div>
+        </div>
+        <!-- Histogram -->
+        <div class="col-lg-6">
+            <div class="stitch-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0">منحنى التوزيع التكراري للأوزان</h5>
+                </div>
+                <div id="histogramChart"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Section -->
+    <div class="stitch-card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">آخر عمليات الصيد</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover text-right" style="direction: rtl;">
+                <thead>
+                    <tr style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                        <th class="py-2 px-3">رقم المصيدة</th>
+                        <th class="py-2 px-3">المجموعة</th>
+                        <th class="py-2 px-3">وقت الصيد</th>
+                        <th class="py-2 px-3">الطول (cm)</th>
+                        <th class="py-2 px-3">الوزن (g)</th>
+                        <th class="py-2 px-3">التصنيف</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="align-middle">
+                        <td class="py-3 px-3 font-monospace">TRP-042</td>
+                        <td class="py-3 px-3">المجموعة أ</td>
+                        <td class="py-3 px-3">08:15 AM</td>
+                        <td class="py-3 px-3">22</td>
+                        <td class="py-3 px-3">180</td>
+                        <td class="py-3 px-3"><span class="badge bg-light text-dark border">متوسط</span></td>
+                    </tr>
+                    <tr class="align-middle">
+                        <td class="py-3 px-3 font-monospace">TRP-118</td>
+                        <td class="py-3 px-3">المجموعة ب</td>
+                        <td class="py-3 px-3">06:30 AM</td>
+                        <td class="py-3 px-3">28</td>
+                        <td class="py-3 px-3">310</td>
+                        <td class="py-3 px-3"><span class="badge bg-danger-subtle text-danger border border-danger">كبير</span></td>
+                    </tr>
+                    <tr class="align-middle">
+                        <td class="py-3 px-3 font-monospace">TRP-005</td>
+                        <td class="py-3 px-3">المجموعة أ</td>
+                        <td class="py-3 px-3">11:45 PM</td>
+                        <td class="py-3 px-3">12</td>
+                        <td class="py-3 px-3">45</td>
+                        <td class="py-3 px-3"><span class="badge bg-warning-subtle text-warning border border-warning">صغير</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+@code {
+    private string _selectedGroup = "";
+    private string _selectedType = "";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await RenderCharts();
+        }
+    }
+
+    private async Task ApplyFilters()
+    {
+        await RenderCharts();
+    }
+
+    private async Task RenderCharts()
+    {
+        var scatterData = new[]
+        {
+            new { name = "جرذ منزلي", data = new[] { new[] { 12.0, 45.0 }, new[] { 14.0, 55.0 }, new[] { 15.0, 60.0 } } },
+            new { name = "نرويجي", data = new[] { new[] { 22.0, 180.0 }, new[] { 24.0, 210.0 }, new[] { 28.0, 310.0 } } },
+            new { name = "متسلق", data = new[] { new[] { 18.0, 120.0 }, new[] { 20.0, 150.0 }, new[] { 21.0, 160.0 } } }
+        };
+
+        var scatterJson = JsonSerializer.Serialize(scatterData);
+        var categories = JsonSerializer.Serialize(new[] { "0-50g", "50-150g", "150-250g", "250g+" });
+        var values = JsonSerializer.Serialize(new[] { 12, 45, 87, 24 });
+
+        await JSRuntime.InvokeVoidAsync("renderSizeWeightScatterChart", "scatterChart", scatterJson);
+        await JSRuntime.InvokeVoidAsync("renderWeightHistogramChart", "histogramChart", categories, values);
+    }
+}

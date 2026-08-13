@@ -1,0 +1,118 @@
+@inject IJSRuntime JSRuntime
+
+<div class="card border border-light-subtle shadow-sm rounded-4 bg-white p-3.5 h-100 d-flex flex-column" dir="rtl">
+    
+    <!-- Executive Section Header -->
+    <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2.5">
+        <div class="d-flex align-items-center gap-2">
+            <div class="p-1.5 rounded-3 bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 34px; height: 34px;">
+                <i class="mdi mdi-speedometer fs-18" style="color: #1B365D !important;"></i>
+            </div>
+            <div>
+                <h6 class="fw-extrabold mb-0 text-dark" style="color: #1B365D !important; font-size: 1.05rem;">مؤشر شدة الإصابة الذكي</h6>
+                <span class="fs-11 text-muted fw-medium">تحليل خوارزميات الاستشعار لقياس مستوى المخاطر اللحظية</span>
+            </div>
+        </div>
+        
+        <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 fs-10 fw-bold rounded-pill d-flex align-items-center gap-1">
+            <span class="spinner-grow spinner-grow-sm text-success p-0" style="width: 6px; height: 6px;" role="status"></span>
+            <span>التقييم: آمن (12%)</span>
+        </span>
+    </div>
+
+    <!-- Main Content Area: 2 Columns -->
+    <div class="row g-3 align-items-center justify-content-center flex-grow-1 my-1">
+        
+        <!-- Right Column (RTL): Algorithm Level Legend Cards -->
+        <div class="col-md-5 d-flex flex-column justify-content-center">
+            <div class="text-dark fw-bold fs-12 mb-2 d-flex align-items-center gap-1.5">
+                <i class="mdi mdi-layers-outline text-primary" style="color: #1B365D !important;"></i>
+                <span>مستويات خوارزمية التقييم:</span>
+            </div>
+
+            <div class="vstack gap-1.5">
+                <div class="p-2 rounded-3 border bg-light d-flex align-items-center justify-content-between transition-all">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="rounded-circle" style="width: 10px; height: 10px; background-color: #14b8a6;"></span>
+                        <span class="fs-12 fw-bold text-dark">منخفض (0 - 30%)</span>
+                    </div>
+                    <span class="badge bg-white text-muted border fs-9 fw-semibold px-2 py-0.5">آمن وطبيعي</span>
+                </div>
+
+                <div class="p-2 rounded-3 border bg-light d-flex align-items-center justify-content-between opacity-75">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="rounded-circle" style="width: 10px; height: 10px; background-color: #06b6d4;"></span>
+                        <span class="fs-12 fw-medium text-dark">متوسط (31 - 50%)</span>
+                    </div>
+                    <span class="badge bg-white text-muted border fs-9 fw-semibold px-2 py-0.5">حركة اعتيادية</span>
+                </div>
+
+                <div class="p-2 rounded-3 border bg-light d-flex align-items-center justify-content-between opacity-75">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="rounded-circle" style="width: 10px; height: 10px; background-color: #3b82f6;"></span>
+                        <span class="fs-12 fw-medium text-dark">مرتفع (51 - 80%)</span>
+                    </div>
+                    <span class="badge bg-white text-muted border fs-9 fw-semibold px-2 py-0.5">نشاط ملحوظ</span>
+                </div>
+
+                <div class="p-2 rounded-3 border bg-light d-flex align-items-center justify-content-between opacity-75">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="rounded-circle" style="width: 10px; height: 10px; background-color: #f43f5e;"></span>
+                        <span class="fs-12 fw-medium text-dark">مرتفع جداً (81 - 90%)</span>
+                    </div>
+                    <span class="badge bg-white text-muted border fs-9 fw-semibold px-2 py-0.5">خطر مرتفع</span>
+                </div>
+
+                <div class="p-2 rounded-3 border bg-light d-flex align-items-center justify-content-between opacity-75">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="rounded-circle" style="width: 10px; height: 10px; background-color: #e11d48;"></span>
+                        <span class="fs-12 fw-medium text-dark">شديد (91 - 100%)</span>
+                    </div>
+                    <span class="badge bg-white text-muted border fs-9 fw-semibold px-2 py-0.5">طوارئ قصوى</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vertical Divider line -->
+        <div class="col-md-1 d-none d-md-flex justify-content-center p-0">
+            <div style="width: 1px; height: 170px; background-color: #e2e8f0;"></div>
+        </div>
+
+        <!-- Left Column (RTL): Radial Gauge Canvas Container -->
+        <div class="col-md-6 d-flex flex-column align-items-center justify-content-center">
+            <div class="text-dark fw-bold fs-12 mb-1 text-center">المؤشر العددي اللحظي</div>
+            
+            <div class="position-relative d-flex align-items-center justify-content-center" style="width: 230px; height: 190px;">
+                <canvas id="intensityGaugeCanvas" width="230" height="190" style="max-width: 100%; height: auto; display: block; margin: 0 auto;"></canvas>
+                
+                <!-- Central Readout Overlay -->
+                <div class="position-absolute" style="bottom: 12px; left: 50%; transform: translateX(-50%); text-align: center; line-height: 1.15;">
+                    <div id="intensityValueText" class="fw-extrabold" style="font-size: 2rem; font-family: 'Inter', sans-serif; letter-spacing: -0.5px;">--</div>
+                    <div id="intensityLabelText" class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-2.5 py-1 fs-11 fw-bold mt-1">--</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Executive Footer AI Evaluation Factors -->
+    <div class="mt-auto pt-2.5 border-top d-flex flex-wrap align-items-center justify-content-between gap-2 fs-10 text-muted">
+        <span class="fw-bold text-dark">عوامل احتساب خوارزمية التقييم:</span>
+        <div class="d-flex flex-wrap align-items-center gap-1.5">
+            <span class="badge bg-light text-secondary border px-2 py-1 fs-10 fw-medium"><i class="mdi mdi-radar ms-1"></i>النشاط</span>
+            <span class="badge bg-light text-secondary border px-2 py-1 fs-10 fw-medium"><i class="mdi mdi-map-marker-outline ms-1"></i>الموقع</span>
+            <span class="badge bg-light text-secondary border px-2 py-1 fs-10 fw-medium"><i class="mdi mdi-food-apple-outline ms-1"></i>الاستهلاك</span>
+            <span class="badge bg-light text-secondary border px-2 py-1 fs-10 fw-medium"><i class="mdi mdi-repeat ms-1"></i>التكرار</span>
+        </div>
+    </div>
+
+</div>
+
+@code {
+    [Parameter] public double Percentage { get; set; } = 12;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await Task.Delay(80);
+        await JSRuntime.InvokeVoidAsync("updateIntensityChart", Percentage);
+    }
+}

@@ -1,0 +1,127 @@
+@using MediatR
+@using Application.Features.Stats.Queries
+@using Application.DTOs
+@inject IMediator Mediator
+@inject IJSRuntime JSRuntime
+
+<div class="card border border-light-subtle shadow-sm rounded-4 bg-white p-3.5 h-100" dir="rtl">
+    
+    <!-- Executive Section Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3 border-bottom pb-2.5">
+        <div class="d-flex align-items-center gap-2">
+            <div class="p-1.5 rounded-3 bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 34px; height: 34px;">
+                <i class="mdi mdi-chart-timeline-variant fs-18" style="color: #1B365D !important;"></i>
+            </div>
+            <div>
+                <h6 class="fw-extrabold mb-0 text-dark" style="color: #1B365D !important; font-size: 1.05rem;">مخطط تحليلات الإصابة والنشاط الزمني</h6>
+                <span class="fs-11 text-muted fw-medium">مقارنة أنماط الزيارات الميدانية ومعدلات استهلاك الطعوم التراكمية</span>
+            </div>
+        </div>
+
+        <!-- Filter Pill Toggle Buttons -->
+        <div class="d-flex align-items-center gap-2 me-auto ms-0">
+            <div class="bg-light p-1 rounded-3 border d-flex gap-1" style="background-color: #F1F5F9 !important;">
+                <button type="button" 
+                        class="btn btn-sm fs-11 fw-bold border-0 px-3 py-1 rounded-2 transition-all @(ActiveTimeframe == "daily" ? "btn-primary shadow-xs" : "text-muted")" 
+                        style="@(ActiveTimeframe == "daily" ? "background-color: #1B365D !important;" : "")"
+                        @onclick='() => ChangeTimeframe("daily")'>
+                    <i class="mdi mdi-clock-outline ms-1"></i> يومي (24 ساعة)
+                </button>
+                <button type="button" 
+                        class="btn btn-sm fs-11 fw-bold border-0 px-3 py-1 rounded-2 transition-all @(ActiveTimeframe == "monthly" ? "btn-primary shadow-xs" : "text-muted")" 
+                        style="@(ActiveTimeframe == "monthly" ? "background-color: #1B365D !important;" : "")"
+                        @onclick='() => ChangeTimeframe("monthly")'>
+                    <i class="mdi mdi-calendar-month-outline ms-1"></i> شهري (31 يوم)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Telemetry KPI Chips Bar -->
+    <div class="row g-2 mb-2 text-end fs-11">
+        <div class="col-md-4">
+            <div class="p-2 rounded-3 bg-light border d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="mdi mdi-trending-up text-danger fs-16"></i>
+                    <span class="text-muted fw-semibold">ذروة النشاط اليومي:</span>
+                </div>
+                <span class="fw-bold text-dark bg-white px-2 py-0.5 rounded border">الساعة 02:00 صباحاً</span>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="p-2 rounded-3 bg-light border d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="mdi mdi-food-apple-outline text-primary fs-16" style="color: #1B365D !important;"></i>
+                    <span class="text-muted fw-semibold">استهلاك الطعم التراكمي:</span>
+                </div>
+                <span class="fw-bold text-primary bg-white px-2 py-0.5 rounded border" style="color: #1B365D !important;">1.8 كجم / 24h</span>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="p-2 rounded-3 bg-light border d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="mdi mdi-shield-check-outline text-success fs-16"></i>
+                    <span class="text-muted fw-semibold">معدل الفعالية:</span>
+                </div>
+                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 fs-10 fw-bold rounded-pill">98.6% آمنة</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ApexChart Target Container -->
+    <div class="card-body p-0 pt-2 flex-grow-1">
+        <div id="teamProductivityChart" 
+             data-colors='["#06B6D4", "#6366F1"]' 
+             class="apex-charts" 
+             style="min-height: 310px;" 
+             dir="ltr">
+        </div>
+    </div>
+
+    <!-- Chart Analytics Summary Insights Footer -->
+    <div class="mt-2 pt-2 border-top d-flex flex-wrap align-items-center justify-content-between fs-11 text-muted">
+        <div class="d-flex align-items-center gap-2">
+            <i class="mdi mdi-information-outline text-primary"></i>
+            <span><strong>رؤية تحليلية:</strong> 78% من كشوفات الحركة تحدث في الفترة الليلية من 01:00 ص إلى 04:00 ص.</span>
+        </div>
+        <span class="text-dark fw-bold">آخر تحديث للمخطط: منذ دقيقة واحدة</span>
+    </div>
+
+</div>
+
+@code {
+    private string ActiveTimeframe { get; set; } = "daily";
+    private string[] Categories { get; set; } = Array.Empty<string>();
+    private double[] BaitData { get; set; } = Array.Empty<double>();
+    private int[] VisitData { get; set; } = Array.Empty<int>();
+    private string? MonthName { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadDataAsync();
+            await Task.Delay(80);
+            await JSRuntime.InvokeVoidAsync("updateTeamProductivityChart", Categories, BaitData, VisitData, ActiveTimeframe, MonthName);
+        }
+    }
+
+    private async Task LoadDataAsync()
+    {
+        var result = await Mediator.Send(new GetInfestationTimelineQuery(ActiveTimeframe));
+        Categories = result.Categories;
+        BaitData = result.BaitData;
+        VisitData = result.VisitData;
+        MonthName = result.MonthName;
+    }
+
+    private async Task ChangeTimeframe(string timeframe)
+    {
+        if (ActiveTimeframe != timeframe)
+        {
+            ActiveTimeframe = timeframe;
+            await LoadDataAsync();
+            await JSRuntime.InvokeVoidAsync("updateTeamProductivityChart", Categories, BaitData, VisitData, ActiveTimeframe, MonthName);
+        }
+    }
+}

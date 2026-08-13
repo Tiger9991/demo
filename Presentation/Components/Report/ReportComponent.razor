@@ -1,0 +1,174 @@
+@inject IJSRuntime JSRuntime
+@using System.Text.Json
+
+<section class="page-content report-builder-page" dir="rtl">
+    <div class="row g-3">
+        <!-- Form Options Left Column (in RTL it places to the right) -->
+        <div class="col-lg-4">
+            <div class="stitch-card h-100">
+                <h4 class="fw-bold mb-4 text-primary">إعداد التقرير</h4>
+                <div class="mb-3">
+                    <label class="form-label text-muted fs-12 fw-semibold mb-2">عنوان التقرير</label>
+                    <input type="text" class="form-control" style="border-radius:8px;" @bind="_reportTitle" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted fs-12 fw-semibold mb-2">النطاق الزمني</label>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <input type="date" class="form-control" style="border-radius:8px;" @bind="_startDate" />
+                        </div>
+                        <div class="col-6">
+                            <input type="date" class="form-control" style="border-radius:8px;" @bind="_endDate" />
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted fs-12 fw-semibold mb-2">أنواع البيانات المشمولة</label>
+                    <div class="p-3 border rounded-3 bg-light">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" checked id="chkTech" />
+                            <label class="form-check-label fs-13 text-slate-700" for="chkTech">البيانات الفنية (Technical)</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" checked id="chkEnv" />
+                            <label class="form-check-label fs-13 text-slate-700" for="chkEnv">العوامل البيئية (Environmental)</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="chkBait" />
+                            <label class="form-check-label fs-13 text-slate-700" for="chkBait">استهلاك الطعوم (Bait)</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label text-muted fs-12 fw-semibold mb-2">مستوى التفصيل</label>
+                    <select class="form-select" style="border-radius:8px;" @bind="_summaryLevel">
+                        <option value="executive">ملخص تنفيذي (Executive)</option>
+                        <option value="detailed">تحليل مفصل (Detailed)</option>
+                        <option value="raw">بيانات خام (Raw Data)</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary btn-details w-100 py-2 d-flex align-items-center justify-content-center gap-2" style="border-radius:8px;" @onclick="RefreshPreview">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">refresh</span>
+                    <span>تحديث المعاينة</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Preview Column -->
+        <div class="col-lg-8">
+            <div class="stitch-card mb-3 d-flex justify-content-between align-items-center py-2 px-3">
+                <span class="text-muted fs-12 fw-semibold"><span class="material-symbols-outlined align-middle fs-16 ml-1 text-success">visibility</span> وضع المعاينة النشط</span>
+                <div class="d-flex border rounded overflow-hidden shadow-sm" style="background:#ffffff;">
+                    <button class="btn btn-light btn-sm border-0 border-start px-3 py-1.5 fs-12 fw-semibold text-primary"><span class="material-symbols-outlined align-middle fs-16 ml-1">picture_as_pdf</span> PDF</button>
+                    <button class="btn btn-light btn-sm border-0 border-start px-3 py-1.5 fs-12 fw-semibold text-slate-600"><span class="material-symbols-outlined align-middle fs-16 ml-1">table_view</span> Excel</button>
+                    <button class="btn btn-light btn-sm border-0 px-3 py-1.5 fs-12 fw-semibold text-slate-600"><span class="material-symbols-outlined align-middle fs-16 ml-1">data_object</span> CSV</button>
+                </div>
+            </div>
+
+            <!-- Paper Sheet Preview -->
+            <div class="border rounded-4 bg-white p-5 shadow-sm text-right mx-auto" style="max-width: 800px; min-height: 800px; direction: rtl; border-color:#e2e8f0 !important;">
+                <div class="border-bottom border-2 border-primary pb-3 mb-4 d-flex justify-content-between align-items-end">
+                    <div>
+                        <h2 class="fw-bold mb-1 text-primary">@_reportTitle</h2>
+                        <p class="text-muted fs-12 mb-0">الفترة: @_startDate.ToString("yyyy-MM-dd") - @_endDate.ToString("yyyy-MM-dd")</p>
+                    </div>
+                    <div class="text-left font-monospace fs-12 text-muted">
+                        <div class="text-primary fw-bold fs-18">F&LI</div>
+                        <div>RPT-23-Q3-094</div>
+                    </div>
+                </div>
+
+                <!-- Stats summary block in PDF -->
+                <div class="row g-3 mb-4">
+                    <div class="col-4">
+                        <div class="p-3 border rounded-3 bg-light border-start border-4 border-start-primary">
+                            <span class="fs-11 text-muted fw-bold d-block">إجمالي العينات المجمعة</span>
+                            <span class="fs-18 fw-bold text-dark font-monospace">4,291</span>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-3 border rounded-3 bg-light border-start border-4 border-start-warning">
+                            <span class="fs-11 text-muted fw-bold d-block">المواقع النشطة</span>
+                            <span class="fs-18 fw-bold text-dark font-monospace">184</span>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-3 border rounded-3 bg-light border-start border-4 border-start-danger">
+                            <span class="fs-11 text-muted fw-bold d-block">تنبيهات حرجة</span>
+                            <span class="fs-18 fw-bold text-dark font-monospace">12</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Column Chart Area in Preview -->
+                <div class="mb-4">
+                    <h5 class="fw-bold mb-2">نشاط القوارض حسب القطاع</h5>
+                    <div id="sectorActivityChart"></div>
+                </div>
+
+                <!-- Preview Table -->
+                <div>
+                    <h5 class="fw-bold mb-2">ملخص مؤشرات الأداء (KPIs)</h5>
+                    <table class="table border text-right fs-12 align-middle">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>القطاع</th>
+                                <th>الفعالية (%)</th>
+                                <th>مؤشر المخاطر</th>
+                                <th>الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="fw-bold">المنطقة الشمالية (A1)</td>
+                                <td class="font-monospace">94.2%</td>
+                                <td class="font-monospace">1.2</td>
+                                <td><span class="badge bg-success-subtle text-success border border-success">مستقر</span></td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">المنطقة الصناعية (C3)</td>
+                                <td class="font-monospace">88.5%</td>
+                                <td class="font-monospace">3.8</td>
+                                <td><span class="badge bg-danger-subtle text-danger border border-danger">مراقبة</span></td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">القطاع الساحلي (B2)</td>
+                                <td class="font-monospace">91.0%</td>
+                                <td class="font-monospace">2.1</td>
+                                <td><span class="badge bg-warning-subtle text-warning border border-warning">قيد المراجعة</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@code {
+    private string _reportTitle = "تقرير الأداء التنفيذي - الربع الثالث";
+    private DateTime _startDate = new DateTime(2023, 07, 01);
+    private DateTime _endDate = new DateTime(2023, 09, 30);
+    private string _summaryLevel = "executive";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await RenderChart();
+        }
+    }
+
+    private async Task RefreshPreview()
+    {
+        await RenderChart();
+    }
+
+    private async Task RenderChart()
+    {
+        var sectors = JsonSerializer.Serialize(new[] { "الشمالي A", "الجنوبي B", "الشرقي C", "الغربي D", "الساحلي E" });
+        var values = JsonSerializer.Serialize(new[] { 80, 40, 60, 90, 30 });
+
+        await JSRuntime.InvokeVoidAsync("renderWeightHistogramChart", "sectorActivityChart", sectors, values);
+    }
+}

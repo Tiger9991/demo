@@ -1,0 +1,139 @@
+@using Application.DTOs
+@using Application.Features.Stats.Queries
+@using Application.Features.Traps.Queries
+@inject MediatR.IMediator Mediator
+
+
+<div class="activity-index-badges-wrapper h-100 d-flex flex-column justify-between">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="font-headline-sm text-headline-sm mb-0">المصائد النشطة وحالة المكافحة</h3>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="d-flex align-items-center justify-content-center h-100 py-5">
+            <div class="spinner-border text-primary"></div>
+        </div>
+    }
+    else if (_data == null || !_data.Any())
+    {
+        <div class="alert alert-info border-0 rounded-xl bg-slate-50 text-center py-4">لا توجد بيانات.</div>
+    }
+    else
+    {
+        <!-- Summary Counts (Stitch style) -->
+        <div class="row g-3 mb-4">
+            <div class="col-3">
+                <div class="badge-summary-card status-critical-card text-center p-2 rounded-xl">
+                    <h4 class="mb-0 fw-bold font-outfit">@_criticalCount</h4>
+                    <small class="font-semibold text-xs d-block mt-1">حرج</small>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="badge-summary-card status-high-card text-center p-2 rounded-xl">
+                    <h4 class="mb-0 fw-bold font-outfit">@_highCount</h4>
+                    <small class="font-semibold text-xs d-block mt-1">مرتفع</small>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="badge-summary-card status-medium-card text-center p-2 rounded-xl">
+                    <h4 class="mb-0 fw-bold font-outfit">@_mediumCount</h4>
+                    <small class="font-semibold text-xs d-block mt-1">متوسط</small>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="badge-summary-card status-low-card text-center p-2 rounded-xl">
+                    <h4 class="mb-0 fw-bold font-outfit">@_lowCount</h4>
+                    <small class="font-semibold text-xs d-block mt-1">منخفض</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table of active traps -->
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 text-right">
+                <thead>
+                    <tr class="text-slate-400 text-sm border-bottom border-slate-100">
+                        <th class="pb-3 fw-semibold text-right">رقم المصيدة</th>
+                        <th class="pb-3 fw-semibold text-right">المجموعة</th>
+                        <th class="pb-3 fw-semibold text-right">مؤشر النشاط</th>
+                        <th class="pb-3 fw-semibold text-right">الحالة</th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm">
+                    @foreach (var item in _data)
+                    {
+                        var statusInfo = GetStatusInfo(item.Level);
+                        <tr class="border-bottom border-slate-50 hover-row">
+                            <td class="py-3 fw-bold text-slate-800 text-right">@item.TrapNumber</td>
+                            <td class="py-3 text-slate-500 text-right">المجموعة @item.GroupNumber</td>
+                            <td class="py-3 text-right">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="bg-slate-100 rounded-full overflow-hidden" style="width: 80px; height: 6px;">
+                                        <div class="h-100 rounded-full" 
+                                             style="width: @(item.Index)%; background-color: @statusInfo.Color;">
+                                        </div>
+                                    </div>
+                                    <span class="font-semibold text-slate-700">@item.Index.ToString("N0")%</span>
+                                </div>
+                            </td>
+                            <td class="py-3 text-right">
+                                <span class="badge-pill-status px-2 py-1 text-xs font-bold" 
+                                      style="background-color: @statusInfo.BgColor; color: @statusInfo.Color; border: 1px solid @statusInfo.BorderColor;">
+                                    @statusInfo.Icon @item.Level
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string Group { get; set; } = "";
+
+    private List<ActivityIndexWithBadgeDto> _data = new();
+    private string _selectedGroup = "";
+    private bool _isLoading = false;
+    private int _lowCount, _mediumCount, _highCount, _criticalCount;
+
+    private async Task LoadData()
+    {
+        _isLoading = true;
+        StateHasChanged();
+
+        _data = await Mediator.Send(new GetActivityIndexWithBadgesQuery(
+            string.IsNullOrEmpty(_selectedGroup) ? null : _selectedGroup
+        ));
+
+        // Count by level
+        _lowCount = _data.Count(d => d.Level == "منخفض");
+        _mediumCount = _data.Count(d => d.Level == "متوسط");
+        _highCount = _data.Count(d => d.Level == "مرتفع");
+        _criticalCount = _data.Count(d => d.Level == "حرج");
+
+        _isLoading = false;
+        StateHasChanged();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _selectedGroup = Group;
+        await LoadData();
+    }
+
+    private (string Icon, string Color, string BgColor, string BorderColor) GetStatusInfo(string level)
+    {
+        return level switch
+        {
+            "حرج" => ("🔴", "#ef4444", "#fee2e2", "#fecaca"),
+            "مرتفع" => ("🔶", "#f97316", "#ffedd5", "#fed7aa"),
+            "متوسط" => ("⚠️", "#eab308", "#fef9c3", "#fef08a"),
+            "منخفض" => ("✅", "#10b981", "#d1fae5", "#a7f3d0"),
+            _ => ("❓", "#64748b", "#f1f5f9", "#e2e8f0")
+        };
+    }
+}
