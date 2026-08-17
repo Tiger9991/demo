@@ -23,14 +23,6 @@ namespace Application.Features.Traps.Queries
             GetDisconnectedTrapsByGroupQuery request,
             CancellationToken cancellationToken)
         {
-            var allTrapGroups = await _context.TrapGroups.AsNoTracking()
-                .OrderByDescending(g => g.CreatedAt)
-                .ToListAsync(cancellationToken);
-
-            var distinctGroups = allTrapGroups
-                .DistinctBy(g => new { g.TrapGroup, g.TrapNumber })
-                .ToList();
-
             var allPhysicalTraps = await _context.Traps.AsNoTracking().ToListAsync(cancellationToken);
 
             var latestMeasurements = await _context.TrapBaitMeasurement.AsNoTracking()
@@ -45,50 +37,35 @@ namespace Application.Features.Traps.Queries
 
             var offlineTraps = new List<(string TrapGroup, string TrapNumber)>();
 
-            foreach (var tg in distinctGroups)
+            foreach (var trap in allPhysicalTraps)
             {
-                var matchingTrap = allPhysicalTraps
-                    .OrderByDescending(t => t.LastEntryDate ?? t.CreatedAt)
-                    .FirstOrDefault(t => t.TrapGroup == tg.TrapGroup && t.TrapNumber == tg.TrapNumber);
-
-                if (matchingTrap == null || matchingTrap.status != "Active")
+                if (trap.status != "Active")
                 {
-                    offlineTraps.Add((tg.TrapGroup, tg.TrapNumber));
+                    offlineTraps.Add((trap.TrapGroup ?? "Unassigned", trap.TrapNumber));
+                    continue;
+                }
+
+                var candidateDates = new[] {
+                    latestMeasurements.TryGetValue(trap.Id, out var lb) ? lb : (DateTime?)null,
+                    latestCaptures.TryGetValue(trap.Id, out var lc) ? lc : (DateTime?)null,
+                    trap.LastEntryDate
+                }.Where(d => d.HasValue).Select(d => d.Value).ToList();
+
+                DateTime? lastActivity = candidateDates.Any() ? candidateDates.Max() : null;
+
+                bool isConnected = false;
+                if (lastActivity.HasValue)
+                {
+                    isConnected = (DateTime.UtcNow - lastActivity.Value).TotalHours <= 2.0;
                 }
                 else
                 {
-                    bool isDisconnected = false;
-                    DateTime? lastActivity = null;
+                    isConnected = (DateTime.UtcNow - trap.StartTime).TotalHours <= 2.0;
+                }
 
-                    if (latestMeasurements.TryGetValue(matchingTrap.Id, out var latestBaitTime))
-                    {
-                        lastActivity = latestBaitTime;
-                    }
-
-                    if (latestCaptures.TryGetValue(matchingTrap.Id, out var latestCaptureTime))
-                    {
-                        if (lastActivity == null || latestCaptureTime > lastActivity.Value)
-                        {
-                            lastActivity = latestCaptureTime;
-                        }
-                    }
-
-                    if (lastActivity.HasValue)
-                    {
-                        if ((DateTime.UtcNow - lastActivity.Value).TotalHours > 2)
-                        {
-                            isDisconnected = true;
-                        }
-                    }
-                    else
-                    {
-                        isDisconnected = true;
-                    }
-
-                    if (isDisconnected)
-                    {
-                        offlineTraps.Add((matchingTrap.TrapGroup, matchingTrap.TrapNumber));
-                    }
+                if (!isConnected)
+                {
+                    offlineTraps.Add((trap.TrapGroup ?? "Unassigned", trap.TrapNumber));
                 }
             }
 

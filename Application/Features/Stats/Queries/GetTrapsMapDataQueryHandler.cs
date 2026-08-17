@@ -5,9 +5,7 @@ using Domain.Enums;
 using MediatR;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -23,62 +21,21 @@ namespace Application.Features.Stats.Queries
 
         public async Task<List<TrapDetailDto>> Handle(GetTrapsMapDataQuery request, CancellationToken cancellationToken)
         {
-            // 1. Load seed coordinates
-            List<TrapSeedDto> seedItems = new();
-            try
-            {
-                var assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == "Infrastructure");
-                var resourceName = "Infrastructure.Data.SeedData.traps_seed.json";
-                if (assembly != null)
-                {
-                    using var stream = assembly.GetManifestResourceStream(resourceName);
-                    if (stream != null)
-                    {
-                        using var reader = new StreamReader(stream);
-                        var json = await reader.ReadToEndAsync(cancellationToken);
-                        seedItems = JsonSerializer.Deserialize<List<TrapSeedDto>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
-                    }
-                }
-            }
-            catch { }
-
-            if (!seedItems.Any())
-            {
-                try
-                {
-                    var filePath = "D:/system/Infrastructure/Data/seeddata/traps_seed.json";
-                    if (File.Exists(filePath))
-                    {
-                        var json = await File.ReadAllTextAsync(filePath, cancellationToken);
-                        seedItems = JsonSerializer.Deserialize<List<TrapSeedDto>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
-                    }
-                }
-                catch { }
-            }
-
-            // 2. Load all TrapGroups assigned to customers
-            var groupQuery = _context.TrapGroups
-                .Where(tg => tg.CustomerId != null);
-
-            if (!string.IsNullOrEmpty(request.GroupNumber))
-                groupQuery = groupQuery.Where(tg => tg.TrapGroup == request.GroupNumber);
-
-            var assignedGroups = await groupQuery.AsNoTracking().ToListAsync(cancellationToken);
-
-            var distinctGroups = assignedGroups
-                .DistinctBy(tg => new { tg.TrapGroup, tg.TrapNumber })
-                .ToList();
-
-            // 3. Load active traps from database
+            // 1. Load active traps from database
             var trapQuery = _context.Traps.AsNoTracking();
             if (!string.IsNullOrEmpty(request.GroupNumber))
                 trapQuery = trapQuery.Where(t => t.TrapGroup == request.GroupNumber);
 
             var databaseTraps = await trapQuery.ToListAsync(cancellationToken);
-            var dbTrapsDict = databaseTraps
-                .GroupBy(t => new { t.TrapGroup, t.TrapNumber })
-                .ToDictionary(g => g.Key, g => g.First());
 
+            // 3. Load TrapGroups from database
+            var groupQuery = _context.TrapGroups.AsNoTracking();
+            if (!string.IsNullOrEmpty(request.GroupNumber))
+                groupQuery = groupQuery.Where(tg => tg.TrapGroup == request.GroupNumber);
+
+            var allGroups = await groupQuery.ToListAsync(cancellationToken);
+
+            // 4. Fetch telemetry activity for connected status check
             var dbTrapIds = databaseTraps.Select(t => t.Id).ToList();
 
             var latestMeasurements = await _context.TrapBaitMeasurement.AsNoTracking()
@@ -93,113 +50,113 @@ namespace Application.Features.Stats.Queries
                 .Select(g => new { TrapId = g.Key, LatestTime = g.Max(c => c.CaptureTime) })
                 .ToDictionaryAsync(x => x.TrapId, x => x.LatestTime, cancellationToken);
 
-            // 4. Map and merge
             var results = new List<TrapDetailDto>();
-            foreach (var tg in distinctGroups)
+            var processedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            // 5. Process all database traps
+            foreach (var dbTrap in databaseTraps)
             {
-                var key = new { tg.TrapGroup, tg.TrapNumber };
-                dbTrapsDict.TryGetValue(key, out var dbTrap);
+                var groupKey = dbTrap.TrapGroup ?? "0";
+                var trapKey = dbTrap.TrapNumber ?? "0";
+                processedKeys.Add($"{groupKey}_{trapKey}");
 
-                // Resolve coordinates from seed
-                double latitude = 29.9088; // Default fallback
-                double longitude = 31.7900; // Default fallback
+                // Coordinates resolution
+                double latitude;
+                double longitude;
 
-                // Use robust matching helper to find match in seed items
-                var seed = seedItems.FirstOrDefault(s => MatchTrapNumber(s.GroupNumber, s.TrapNumber, tg.TrapGroup, tg.TrapNumber));
-
-                // Fall back to any trap in the same group in seed data if no exact match is found
-                if (seed == null)
-                {
-                    seed = seedItems.FirstOrDefault(s => s.GroupNumber == tg.TrapGroup);
-                }
-
-                if (seed != null)
-                {
-                    latitude = seed.Latitude;
-                    longitude = seed.Longitude;
-                }
-
-                // If database record exists, override coordinates with database values if database has them
-                if (dbTrap != null && dbTrap.Latitude.HasValue && dbTrap.Longitude.HasValue)
+                if (dbTrap.Latitude.HasValue && dbTrap.Longitude.HasValue && dbTrap.Latitude.Value != 0 && dbTrap.Longitude.Value != 0)
                 {
                     latitude = dbTrap.Latitude.Value;
                     longitude = dbTrap.Longitude.Value;
                 }
-
-                if (dbTrap != null)
-                {
-                    IndicatorStatus status = Trap.CalculateIndicatorStatus(dbTrap.LastEntryDate);
-                    int days = dbTrap.LastEntryDate.HasValue ? (int)(DateTime.UtcNow - dbTrap.LastEntryDate.Value).TotalDays : 999;
-
-                    bool isConnected = false;
-                    DateTime? lastActivity = null;
-
-                    if (latestMeasurements.TryGetValue(dbTrap.Id, out var latestBaitTime))
-                    {
-                        lastActivity = latestBaitTime;
-                    }
-
-                    if (latestCaptures.TryGetValue(dbTrap.Id, out var latestCaptureTime))
-                    {
-                        if (lastActivity == null || latestCaptureTime > lastActivity.Value)
-                        {
-                            lastActivity = latestCaptureTime;
-                        }
-                    }
-
-                    if (lastActivity.HasValue)
-                    {
-                        if ((DateTime.UtcNow - lastActivity.Value).TotalHours <= 2)
-                        {
-                            isConnected = true;
-                        }
-                    }
-
-                    results.Add(new TrapDetailDto
-                    {
-                        Latitude = latitude,
-                        Longitude = longitude,
-                        TrapNumber = dbTrap.TrapNumber,
-                        GroupNumber = dbTrap.TrapGroup ?? "Unassigned",
-                        Status = dbTrap.status,
-                        LastEntryDate = dbTrap.LastEntryDate,
-                        DaysSinceLastEntry = days,
-                        IndicatorStatus = status,
-                        BatteryPercentage = dbTrap.BatteryPercentage,
-                        SignalStrength = dbTrap.SignalStrength,
-                        SignalQuality = dbTrap.SignalQuality,
-                        TotalTransmissions = dbTrap.TotalTransmissions,
-                        OperatingDays = Math.Max(0, (int)(DateTime.UtcNow - dbTrap.StartTime).TotalDays),
-                        IsActive = dbTrap.status == "Active",
-                        IsConnected = isConnected,
-                        IsOffline = dbTrap.status != "Active" || !isConnected
-                    });
-                }
                 else
                 {
-                    // Trap is in groups but has not checked in (does not exist in database)
-                    results.Add(new TrapDetailDto
-                    {
-                        Latitude = latitude,
-                        Longitude = longitude,
-                        TrapNumber = tg.TrapNumber,
-                        GroupNumber = tg.TrapGroup,
-                        Status = "Non-Initialized",
-                        LastEntryDate = null,
-                        DaysSinceLastEntry = 999,
-                        IndicatorStatus = IndicatorStatus.Green,
-                        BatteryPercentage = 0,
-                        SignalStrength = 0,
-                        SignalQuality = "None",
-                        TotalTransmissions = 0,
-                        OperatingDays = 0,
-                        IsActive = false,
-                        IsConnected = false,
-                        IsOffline = true
-                    });
+                    var (defLat, defLng) = CalculateDefaultCoordinates(groupKey, trapKey);
+                    latitude = defLat;
+                    longitude = defLng;
                 }
+
+                IndicatorStatus status = Trap.CalculateIndicatorStatus(dbTrap.LastEntryDate);
+                int days = dbTrap.LastEntryDate.HasValue ? (int)(DateTime.UtcNow - dbTrap.LastEntryDate.Value).TotalDays : 999;
+
+                var candidateDates = new[] {
+                    latestMeasurements.TryGetValue(dbTrap.Id, out var lb) ? lb : (DateTime?)null,
+                    latestCaptures.TryGetValue(dbTrap.Id, out var lc) ? lc : (DateTime?)null,
+                    dbTrap.LastEntryDate
+                }.Where(d => d.HasValue).Select(d => d.Value).ToList();
+
+                DateTime? lastActivity = candidateDates.Any() ? candidateDates.Max() : null;
+
+                bool isConnected = false;
+                if (dbTrap.status == "Active")
+                {
+                    if (lastActivity.HasValue)
+                    {
+                        isConnected = (DateTime.UtcNow - lastActivity.Value).TotalHours <= 2.0;
+                    }
+                    else
+                    {
+                        isConnected = (DateTime.UtcNow - dbTrap.StartTime).TotalHours <= 2.0;
+                    }
+                }
+
+                results.Add(new TrapDetailDto
+                {
+                    Latitude = latitude,
+                    Longitude = longitude,
+                    TrapNumber = dbTrap.TrapNumber,
+                    GroupNumber = dbTrap.TrapGroup ?? "Unassigned",
+                    Status = dbTrap.status,
+                    LastEntryDate = dbTrap.LastEntryDate,
+                    DaysSinceLastEntry = days,
+                    IndicatorStatus = status,
+                    BatteryPercentage = dbTrap.BatteryPercentage,
+                    SignalStrength = dbTrap.SignalStrength,
+                    SignalQuality = dbTrap.SignalQuality,
+                    TotalTransmissions = dbTrap.TotalTransmissions,
+                    OperatingDays = Math.Max(0, (int)(DateTime.UtcNow - dbTrap.StartTime).TotalDays),
+                    IsActive = dbTrap.status == "Active",
+                    IsConnected = isConnected,
+                    IsOffline = dbTrap.status != "Active" || !isConnected
+                });
             }
 
+            // 6. Process any configured TrapGroups not yet in Traps table
+            foreach (var tg in allGroups)
+            {
+                var groupKey = tg.TrapGroup ?? "0";
+                var trapKey = tg.TrapNumber ?? "0";
+                var uniqueKey = $"{groupKey}_{trapKey}";
+
+                if (processedKeys.Contains(uniqueKey))
+                    continue;
+
+                processedKeys.Add(uniqueKey);
+
+                var (defLat, defLng) = CalculateDefaultCoordinates(groupKey, trapKey);
+
+                results.Add(new TrapDetailDto
+                {
+                    Latitude = defLat,
+                    Longitude = defLng,
+                    TrapNumber = tg.TrapNumber,
+                    GroupNumber = tg.TrapGroup,
+                    Status = "Non-Initialized",
+                    LastEntryDate = null,
+                    DaysSinceLastEntry = 999,
+                    IndicatorStatus = IndicatorStatus.Green,
+                    BatteryPercentage = 0,
+                    SignalStrength = 0,
+                    SignalQuality = "None",
+                    TotalTransmissions = 0,
+                    OperatingDays = 0,
+                    IsActive = false,
+                    IsConnected = false,
+                    IsOffline = true
+                });
+            }
+
+            // 7. Return database results (empty list if no traps exist)
             var orderedResults = results.OrderBy(d => d.IsOffline).ThenBy(d => d.GroupNumber).ThenBy(d => d.TrapNumber).ToList();
             if (request.Limit.HasValue)
             {
@@ -208,36 +165,44 @@ namespace Application.Features.Stats.Queries
             return orderedResults;
         }
 
-        private static bool MatchTrapNumber(string seedGroup, string seedTrap, string targetGroup, string targetTrap)
+        private static (double Latitude, double Longitude) CalculateDefaultCoordinates(string groupStr, string trapStr)
         {
-            if (seedTrap.Contains('-'))
+            int group = int.TryParse(groupStr, out var g) ? g : 0;
+            int number = int.TryParse(trapStr, out var n) ? n : 0;
+
+            double groupLat = group switch
             {
-                var parts = seedTrap.Split('-');
-                if (parts.Length == 2)
-                {
-                    if (int.TryParse(parts[0], out int g) && int.TryParse(parts[1], out int t))
-                    {
-                        seedGroup = g.ToString();
-                        seedTrap = t.ToString();
-                    }
-                }
-            }
+                0 => 30.0074, // New Cairo / Tagamoa
+                1 => 30.1026, // Heliopolis
+                2 => 30.0566, // Nasr City
+                3 => 29.9602, // Maadi
+                4 => 30.0609, // Zamalek
+                5 => 29.9853, // Giza / Pyramids
+                6 => 30.0877, // Shoubra
+                7 => 30.0207, // Mokattam
+                8 => 30.0614, // Rehab City
+                9 => 30.0444, // Cairo Downtown
+                _ => 30.0444
+            };
 
-            if (int.TryParse(seedGroup, out int sgVal)) seedGroup = sgVal.ToString();
-            if (int.TryParse(seedTrap, out int stVal)) seedTrap = stVal.ToString();
-            if (int.TryParse(targetGroup, out int tgVal)) targetGroup = tgVal.ToString();
-            if (int.TryParse(targetTrap, out int ttVal)) targetTrap = ttVal.ToString();
+            double groupLng = group switch
+            {
+                0 => 31.4913,
+                1 => 31.3326,
+                2 => 31.3438,
+                3 => 31.2569,
+                4 => 31.2197,
+                5 => 31.1386,
+                6 => 31.2461,
+                7 => 31.2882,
+                8 => 31.4922,
+                9 => 31.2357,
+                _ => 31.2357
+            };
 
-            return seedGroup.Equals(targetGroup, StringComparison.OrdinalIgnoreCase) && 
-                   seedTrap.Equals(targetTrap, StringComparison.OrdinalIgnoreCase);
-        }
-
-        private class TrapSeedDto
-        {
-            public string TrapNumber { get; set; } = string.Empty;
-            public string GroupNumber { get; set; } = string.Empty;
-            public double Latitude { get; set; }
-            public double Longitude { get; set; }
+            double angle = (number * 36) * Math.PI / 180.0;
+            double radius = 0.008 + (number * 0.006);
+            return (groupLat + radius * Math.Sin(angle), groupLng + radius * Math.Cos(angle));
         }
     }
 }

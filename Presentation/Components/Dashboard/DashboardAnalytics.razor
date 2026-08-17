@@ -19,7 +19,7 @@
                     <!-- 2. System Station Status Metric Cards (Grid with Interactive Popup Modals) -->
                     <div class="row g-2">
                         <div class="col-6">
-                            <ConnectedStationsCard Value="@_connectedStations" />
+                            <ConnectedStationsCard Value="@_connectedStations" TotalFleet="@_totalNetworkStations" />
                         </div>
                         <div class="col-6">
                             <ActiveTodayStationsCard Value="@_activeToday" />
@@ -28,7 +28,7 @@
                             <LowBatteryStationsCard Value="@_lowBattery" />
                         </div>
                         <div class="col-6">
-                            <OfflineStationsCard Value="@_offlineStations" />
+                            <OfflineStationsCard Value="@_offlineStations" TotalFleet="@_totalNetworkStations" />
                         </div>
                         <div class="col-12">
                             <RefillStationsCard Value="@_refill" />

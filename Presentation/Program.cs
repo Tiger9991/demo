@@ -7,7 +7,6 @@ using Application.Features.Traps.Queries;
 using Application.Settings;
 using Infrastructure;
 using Infrastructure.Data;
-using Infrastructure.Data.seeddata;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Presentation.Components;
@@ -40,21 +39,7 @@ builder.Services.Configure<TrapSettings>(builder.Configuration.GetSection("TrapS
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
-// Seed data
-using (var scope = app.Services.CreateScope())
-{
-    try
-    {
-        var dbContext = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<TrapSeeder>>();
-        await new TrapSeeder(dbContext, logger).SeedAsync();
-    }
-    catch (Exception ex)
-    {
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while seeding the database.");
-    }
-}
+
 // Development
 if (app.Environment.IsDevelopment())
 {

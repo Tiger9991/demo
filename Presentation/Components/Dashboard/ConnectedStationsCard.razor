@@ -7,10 +7,10 @@
 
 <AnalyticsSummaryCard Title="المحطات المتصلة"
                       Value="@Value"
-                      TotalFleet="20"
-                      BadgeText="90% تغطية ممتازة"
-                      Subtext="استقرار الإشارة: 90% ممتازة (متوسط RSSI -74dBm)"
-                      ProgressPercentage="90"
+                      TotalFleet="@TotalFleet"
+                      BadgeText="@BadgeText"
+                      Subtext="@Subtext"
+                      ProgressPercentage="@ProgressPercentage"
                       AccentColor="#10B981"
                       MdiIcon="wifi"
                       ModalId="modal_connected_stations"
@@ -54,28 +54,28 @@
                                     <div>
                                         <div class="d-flex justify-content-between fs-12 fw-semibold mb-1">
                                             <span>إشارة ممتازة (Good / RSSI > -70 dBm)</span>
-                                            <span class="text-success fw-bold">75% (14 محطة)</span>
+                                            <span class="text-success fw-bold">@_goodSignalPct% (@_goodSignalCount محطة)</span>
                                         </div>
                                         <div class="progress" style="height: 8px; border-radius: 4px;">
-                                            <div class="progress-bar bg-success" style="width: 75%;"></div>
+                                            <div class="progress-bar bg-success" style="width: @(_goodSignalPct)%;"></div>
                                         </div>
                                     </div>
                                     <div>
                                         <div class="d-flex justify-content-between fs-12 fw-semibold mb-1">
                                             <span>إشارة متوسطة (Fair / RSSI -70 to -85 dBm)</span>
-                                            <span class="text-info fw-bold">20% (3 محطات)</span>
+                                            <span class="text-info fw-bold">@_fairSignalPct% (@_fairSignalCount محطات)</span>
                                         </div>
                                         <div class="progress" style="height: 8px; border-radius: 4px;">
-                                            <div class="progress-bar bg-info" style="width: 20%;"></div>
+                                            <div class="progress-bar bg-info" style="width: @(_fairSignalPct)%;"></div>
                                         </div>
                                     </div>
                                     <div>
                                         <div class="d-flex justify-content-between fs-12 fw-semibold mb-1">
                                             <span>إشارة ضعيفة (Weak / RSSI &lt; -85 dBm)</span>
-                                            <span class="text-warning fw-bold">5% (1 محطة)</span>
+                                            <span class="text-warning fw-bold">@_weakSignalPct% (@_weakSignalCount محطة)</span>
                                         </div>
                                         <div class="progress" style="height: 8px; border-radius: 4px;">
-                                            <div class="progress-bar bg-warning" style="width: 5%;"></div>
+                                            <div class="progress-bar bg-warning" style="width: @(_weakSignalPct)%;"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -93,13 +93,13 @@
                                     <div class="col-6">
                                         <div class="p-2.5 rounded-3 bg-success-subtle border border-success-subtle">
                                             <span class="fs-11 text-muted d-block fw-semibold">كفاءة الاتصال</span>
-                                            <span class="fs-18 fw-extrabold text-success">90%</span>
+                                            <span class="fs-18 fw-extrabold text-success">@ProgressPercentage%</span>
                                         </div>
                                     </div>
                                     <div class="col-6">
                                         <div class="p-2.5 rounded-3 bg-info-subtle border border-info-subtle">
                                             <span class="fs-11 text-muted d-block fw-semibold">متوسط قوة الإشارة</span>
-                                            <span class="fs-18 fw-extrabold text-info">-74 dBm</span>
+                                            <span class="fs-18 fw-extrabold text-info">@_avgSignalDbm dBm</span>
                                         </div>
                                     </div>
                                 </div>
@@ -176,7 +176,20 @@
 
 @code {
     [Parameter] public int Value { get; set; }
+    [Parameter] public int TotalFleet { get; set; } = 20;
+
     private List<TrapDto>? _modalRows;
+    private int _goodSignalCount = 0;
+    private int _fairSignalCount = 0;
+    private int _weakSignalCount = 0;
+    private int _goodSignalPct = 0;
+    private int _fairSignalPct = 0;
+    private int _weakSignalPct = 0;
+    private int _avgSignalDbm = -74;
+
+    private string BadgeText => TotalFleet > 0 ? $"{Math.Round((double)Value / TotalFleet * 100)}% تغطية متصلة" : "0% تغطية متصلة";
+    private string Subtext => Value > 0 ? $"استقرار الإشارة: {Math.Round((double)Value / (TotalFleet > 0 ? TotalFleet : 1) * 100)}% ممتازة" : "لا توجد محطات متصلة حالياً";
+    private int ProgressPercentage => TotalFleet > 0 ? (int)Math.Round((double)Value / TotalFleet * 100) : 0;
 
     protected override void OnInitialized()
     {
@@ -185,16 +198,40 @@
 
     private async Task FetchDataAsync()
     {
-        if (_modalRows == null)
+        _modalRows = await Mediator.Send(new GetActiveTrapsByGroupQuery());
+        ComputeBreakdown();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void ComputeBreakdown()
+    {
+        if (_modalRows == null || !_modalRows.Any())
         {
-            _modalRows = await Mediator.Send(new GetActiveTrapsByGroupQuery());
-            await InvokeAsync(StateHasChanged);
+            _goodSignalCount = 0;
+            _fairSignalCount = 0;
+            _weakSignalCount = 0;
+            _goodSignalPct = 0;
+            _fairSignalPct = 0;
+            _weakSignalPct = 0;
+            _avgSignalDbm = 0;
+            return;
         }
+
+        int total = _modalRows.Count;
+        _goodSignalCount = _modalRows.Count(r => r.SignalQuality == "ممتاز" || r.SignalQuality == "جيد جدا" || r.SignalStrength >= -75);
+        _fairSignalCount = _modalRows.Count(r => r.SignalQuality == "جيد" || (r.SignalStrength >= -95 && r.SignalStrength < -75));
+        _weakSignalCount = Math.Max(0, total - _goodSignalCount - _fairSignalCount);
+
+        _goodSignalPct = (int)Math.Round((double)_goodSignalCount / total * 100);
+        _fairSignalPct = (int)Math.Round((double)_fairSignalCount / total * 100);
+        _weakSignalPct = Math.Max(0, 100 - _goodSignalPct - _fairSignalPct);
+
+        var validSignals = _modalRows.Where(r => r.SignalStrength < 0).Select(r => (double)r.SignalStrength).ToList();
+        _avgSignalDbm = validSignals.Any() ? (int)Math.Round(validSignals.Average()) : -74;
     }
 
     private async Task OpenModalAsync(string? modalId)
     {
-        // Open Modal instantly on click (0ms delay)
         await JSRuntime.InvokeVoidAsync("openAnalyticsModal", modalId, string.Empty);
         if (_modalRows == null)
         {

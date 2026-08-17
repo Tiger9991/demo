@@ -19,6 +19,24 @@ window.renderTrapMap = function (data) {
         return;
     }
 
+    // Normalize property names (handle both camelCase and PascalCase from .NET serialization)
+    data = data.map(function (item) {
+        var lat = typeof item.latitude === 'number' ? item.latitude : (typeof item.Latitude === 'number' ? item.Latitude : 30.0444);
+        var lng = typeof item.longitude === 'number' ? item.longitude : (typeof item.Longitude === 'number' ? item.Longitude : 31.2357);
+        return {
+            latitude: lat,
+            longitude: lng,
+            trapNumber: item.trapNumber || item.TrapNumber || '0',
+            groupNumber: item.groupNumber || item.GroupNumber || '1',
+            color: item.color || item.Color || '#28a745',
+            statusArabic: item.statusArabic || item.StatusArabic || 'نشطة',
+            batteryPercentage: item.batteryPercentage !== undefined ? item.batteryPercentage : (item.BatteryPercentage !== undefined ? item.BatteryPercentage : 85),
+            status: item.status || item.Status || 'Active',
+            signalQuality: item.signalQuality || item.SignalQuality || 'جيد',
+            indicatorStatus: item.indicatorStatus !== undefined ? item.indicatorStatus : item.IndicatorStatus
+        };
+    });
+
     var map = L.map('map-container', {
         zoomControl: true,
         attributionControl: true
@@ -48,12 +66,18 @@ window.renderTrapMap = function (data) {
         }
     });
 
-    var markerBounds = L.latLngBounds(data.map(point => [point.latitude, point.longitude]));
+    var validCoords = data
+        .filter(p => !isNaN(p.latitude) && !isNaN(p.longitude) && p.latitude !== 0 && p.longitude !== 0)
+        .map(p => [p.latitude, p.longitude]);
 
-    if (data.length === 1) {
-        map.setView([data[0].latitude, data[0].longitude], 15);
-    } else if (markerBounds.isValid()) {
+    var markerBounds = validCoords.length > 0 ? L.latLngBounds(validCoords) : null;
+
+    if (validCoords.length === 1) {
+        map.setView(validCoords[0], 15);
+    } else if (markerBounds && markerBounds.isValid()) {
         map.fitBounds(markerBounds, { padding: [50, 50] });
+    } else {
+        map.setView([30.0444, 31.2357], 11);
     }
 
     // Delayed invalidation to handle Blazor layout rendering and ensure 100% bounds coverage
@@ -121,7 +145,7 @@ window.renderTrapMap = function (data) {
                         <span style="display:inline-block; width:12px; height:12px; background:${markerColor}; border-radius:50%; box-shadow: 0 0 6px ${markerColor}aa;"></span>
                         <div>
                             <strong style="font-size:15px; color:#0f172a; display:block; line-height:1.2;">محطة رقم ${point.trapNumber}</strong>
-                            <span style="font-size:10px; color:#64748b;">العبور - مبنى أ (المنطقة 4)</span>
+                            <span style="font-size:10px; color:#64748b;">إحداثيات: ${point.latitude.toFixed(4)}, ${point.longitude.toFixed(4)}</span>
                         </div>
                     </div>
                     <span style="font-size:11px; background:#1B365D; color:#ffffff; padding:3px 9px; border-radius:12px; font-weight:700;">مجموعة ${point.groupNumber}</span>
@@ -232,14 +256,14 @@ window.renderTrapMap = function (data) {
     var legend = L.control({ position: 'bottomright' });
     legend.onAdd = function () {
         var div = L.DomUtil.create('div', 'info legend');
-        var total = data.length || 20;
+        var total = data.length;
 
         var statuses = [
-            { label: 'نشاط كثيف', color: '#dc3545', count: countsByStatus.high || 3 },
-            { label: 'نشاط متوسط', color: '#fd7e14', count: countsByStatus.medium || 0 },
-            { label: 'نشاط خفيف', color: '#ffc107', count: countsByStatus.low || 0 },
-            { label: 'بدون نشاط (آمن)', color: '#28a745', count: countsByStatus.normal || 15 },
-            { label: 'غير متصلة', color: '#808080', count: countsByStatus.offline || 2 }
+            { label: 'نشاط كثيف', color: '#dc3545', count: countsByStatus.high },
+            { label: 'نشاط متوسط', color: '#fd7e14', count: countsByStatus.medium },
+            { label: 'نشاط خفيف', color: '#ffc107', count: countsByStatus.low },
+            { label: 'بدون نشاط (آمن)', color: '#28a745', count: countsByStatus.normal },
+            { label: 'غير متصلة', color: '#808080', count: countsByStatus.offline }
         ];
 
         var html = `
@@ -251,7 +275,7 @@ window.renderTrapMap = function (data) {
         `;
 
         statuses.forEach(function (s) {
-            var pct = Math.round((s.count / total) * 100);
+            var pct = total > 0 ? Math.round((s.count / total) * 100) : 0;
             html += `
             <div style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; margin-bottom: 4px; color: #334155;">
                 <div style="display: flex; align-items: center; gap: 5px;">

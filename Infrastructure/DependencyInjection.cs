@@ -27,6 +27,10 @@ namespace Infrastructure
                         sqlOptions.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(30), errorNumbersToAdd: null);
                     }));
 
+            // Register ApplicationDbContext (scoped)
+            services.AddScoped<ApplicationDbContext>(provider =>
+                provider.GetRequiredService<IDbContextFactory<ApplicationDbContext>>().CreateDbContext());
+
             // Register IApplicationDbContext (scoped)
             services.AddScoped<IApplicationDbContext>(provider =>
                 provider.GetRequiredService<ApplicationDbContext>());

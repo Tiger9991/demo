@@ -45,48 +45,75 @@ namespace Application.Features.Traps.Queries
                 .ThenBy(g => g.TrapNumber)
                 .ToListAsync(cancellationToken);
 
-            allGroups = allGroups
-                .DistinctBy(g => new { g.TrapGroup, g.TrapNumber })
-                .ToList();
-
-            if (!allGroups.Any())
-                return new List<TrapDto>();
-
             // 2. Load all physical traps (filter by group if provided)
             var trapQuery = _context.Traps.AsNoTracking();
             if (!string.IsNullOrWhiteSpace(request.GroupNumber))
                 trapQuery = trapQuery.Where(t => t.TrapGroup == request.GroupNumber);
 
             var allTraps = await trapQuery.ToListAsync(cancellationToken);
-            var trapsDict = allTraps
-                .GroupBy(t => new { t.TrapGroup, t.TrapNumber })
+
+            var groupDict = allGroups
+                .GroupBy(g => new { TrapGroup = g.TrapGroup ?? "0", TrapNumber = g.TrapNumber ?? "0" })
                 .ToDictionary(g => g.Key, g => g.First());
+
+            var trapsDict = allTraps
+                .GroupBy(t => new { TrapGroup = t.TrapGroup ?? "0", TrapNumber = t.TrapNumber ?? "0" })
+                .ToDictionary(g => g.Key, g => g.First());
+
+            // Merge all unique (TrapGroup, TrapNumber) pairs from both TrapGroups and Traps
+            var allKeys = allGroups.Select(g => new { TrapGroup = g.TrapGroup ?? "0", TrapNumber = g.TrapNumber ?? "0" })
+                .Union(allTraps.Select(t => new { TrapGroup = t.TrapGroup ?? "0", TrapNumber = t.TrapNumber ?? "0" }))
+                .Distinct()
+                .OrderBy(k => k.TrapGroup)
+                .ThenBy(k => k.TrapNumber)
+                .ToList();
+
+            if (!allKeys.Any())
+                return new List<TrapDto>();
 
             var trapIds = allTraps.Select(t => t.Id).ToList();
 
             // 3. Load all bait measurements for these traps (to compute intervals)
-            var baitMeasurements = await _context.TrapBaitMeasurement
-                .Where(m => trapIds.Contains(m.TrapId))
-                .OrderBy(m => m.TrapId)
-                .ThenBy(m => m.MeasurementTime)
+            var trapBaitQuery = _context.TrapBaitMeasurement.AsNoTracking();
+            if (!string.IsNullOrWhiteSpace(request.GroupNumber))
+                trapBaitQuery = trapBaitQuery.Where(m => trapIds.Contains(m.TrapId));
+
+            var trapBaitList = await trapBaitQuery
+                .Select(m => new { m.TrapId, m.MeasurementTime })
                 .ToListAsync(cancellationToken);
 
-            var baitGrouped = baitMeasurements
+            var baitQuery = _context.BaitMeasurements.AsNoTracking();
+            if (!string.IsNullOrWhiteSpace(request.GroupNumber))
+                baitQuery = baitQuery.Where(m => trapIds.Contains(m.TrapId));
+
+            var baitList = await baitQuery
+                .Select(m => new { m.TrapId, m.MeasurementTime })
+                .ToListAsync(cancellationToken);
+
+            var combinedBait = trapBaitList.Concat(baitList)
+                .OrderBy(m => m.TrapId)
+                .ThenBy(m => m.MeasurementTime)
+                .ToList();
+
+            var baitGrouped = combinedBait
                 .GroupBy(m => m.TrapId)
                 .ToDictionary(g => g.Key, g => g.ToList());
 
             // 4. Load latest capture event per trap
-            var latestCapture = await _context.CaptureEvents
-                .Where(c => trapIds.Contains(c.TrapId))
+            var captureQuery = _context.CaptureEvents.AsNoTracking();
+            if (!string.IsNullOrWhiteSpace(request.GroupNumber))
+                captureQuery = captureQuery.Where(c => trapIds.Contains(c.TrapId));
+
+            var latestCapture = await captureQuery
                 .GroupBy(c => c.TrapId)
                 .Select(g => new { TrapId = g.Key, LastCapture = g.Max(c => c.CaptureTime) })
                 .ToDictionaryAsync(x => x.TrapId, x => x.LastCapture, cancellationToken);
 
             var result = new List<TrapDto>();
 
-            foreach (var group in allGroups)
+            foreach (var key in allKeys)
             {
-                var key = new { group.TrapGroup, group.TrapNumber };
+                var group = groupDict.GetValueOrDefault(key);
                 var trap = trapsDict.GetValueOrDefault(key);
 
                 bool isConnected = false;
@@ -108,7 +135,8 @@ namespace Application.Features.Traps.Queries
                         : null;
                     DateTime? lastCapture = latestCapture.TryGetValue(trap.Id, out var capTime) ? capTime : null;
 
-                    DateTime? lastActivity = new[] { lastBait, lastCapture }.Max();
+                    var candidateDates = new[] { lastBait, lastCapture, trap.LastEntryDate }.Where(d => d.HasValue).Select(d => d.Value).ToList();
+                    DateTime? lastActivity = candidateDates.Any() ? candidateDates.Max() : null;
 
                     // If no activity at all, check if the trap is within the grace period
                     if (!lastActivity.HasValue)
@@ -178,7 +206,7 @@ namespace Application.Features.Traps.Queries
                         TrapGroup = trap.TrapGroup,
                         IsActive = isConnected,
                         StartTime = trap.StartTime,
-                        BatteryPercentage = trap.BatteryPercentage,
+                        BatteryPercentage = Trap.CalculateBatteryPercentage(trap.status, trap.BatteryPercentage, trap.StartTime, trap.TotalTransmissions),
                         IndicatorStatus = Trap.CalculateIndicatorStatus(trap.LastEntryDate),
                         LastEntryDate = trap.LastEntryDate,
                         TotalTransmissions = trap.TotalTransmissions,
@@ -192,16 +220,16 @@ namespace Application.Features.Traps.Queries
                 {
                     result.Add(new TrapDto
                     {
-                        Id = group.Id,
-                        TrapNumber = group.TrapNumber,
-                        TrapGroup = group.TrapGroup,
+                        Id = group?.Id ?? Guid.NewGuid(),
+                        TrapNumber = group?.TrapNumber ?? key.TrapNumber,
+                        TrapGroup = group?.TrapGroup ?? key.TrapGroup,
                         IsActive = false,
-                        StartTime = group.CreatedAt,
+                        StartTime = group?.CreatedAt ?? DateTime.UtcNow,
                         BatteryPercentage = 0,
                         IndicatorStatus = IndicatorStatus.Green,
                         LastEntryDate = null,
                         TotalTransmissions = 0,
-                        OperatingDays = Math.Max(0, (int)(DateTime.UtcNow - group.CreatedAt).TotalDays),
+                        OperatingDays = group != null ? Math.Max(0, (int)(DateTime.UtcNow - group.CreatedAt).TotalDays) : 0,
                         SignalStrength = 0,
                         SignalQuality = "-",
                         DisconnectReason = disconnectReason

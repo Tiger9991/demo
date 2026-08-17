@@ -31,7 +31,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Application\Application.csproj" />
-	<EmbeddedResource Include="Data\SeedData\traps_seed.json" />
   </ItemGroup>
 
 </Project>

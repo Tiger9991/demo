@@ -6,10 +6,10 @@
 
 <AnalyticsSummaryCard Title="محطات غير متصلة"
                       Value="@Value"
-                      TotalFleet="20"
-                      BadgeText="10% انقطاع إشارة"
-                      Subtext="السبب المرجح: ضعف تغطية التردد / استنفاد الشحنة"
-                      ProgressPercentage="10"
+                      TotalFleet="@TotalFleet"
+                      BadgeText="@BadgeText"
+                      Subtext="@Subtext"
+                      ProgressPercentage="@ProgressPercentage"
                       AccentColor="#EF4444"
                       MdiIcon="wifi-off"
                       ModalId="modal_offline_stations"
@@ -53,19 +53,19 @@
                                     <div>
                                         <div class="d-flex justify-content-between fs-12 fw-semibold mb-1">
                                             <span>ضعف تغطية التردد / العوائق (Signal Attenuation)</span>
-                                            <span class="text-danger fw-bold">50% (1 محطة)</span>
+                                            <span class="text-danger fw-bold">@_signalReasonPct% (@_signalReasonCount محطة)</span>
                                         </div>
                                         <div class="progress" style="height: 8px; border-radius: 4px;">
-                                            <div class="progress-bar bg-danger" style="width: 50%;"></div>
+                                            <div class="progress-bar bg-danger" style="width: @(_signalReasonPct)%;"></div>
                                         </div>
                                     </div>
                                     <div>
                                         <div class="d-flex justify-content-between fs-12 fw-semibold mb-1">
                                             <span>استنفاد شحنة البطارية (Battery Exhaustion)</span>
-                                            <span class="text-warning fw-bold">50% (1 محطة)</span>
+                                            <span class="text-warning fw-bold">@_batteryReasonPct% (@_batteryReasonCount محطة)</span>
                                         </div>
                                         <div class="progress" style="height: 8px; border-radius: 4px;">
-                                            <div class="progress-bar bg-warning" style="width: 50%;"></div>
+                                            <div class="progress-bar bg-warning" style="width: @(_batteryReasonPct)%;"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -159,7 +159,17 @@
 
 @code {
     [Parameter] public int Value { get; set; }
+    [Parameter] public int TotalFleet { get; set; } = 20;
+
     private List<TrapDto>? _modalRows;
+    private int _signalReasonCount = 0;
+    private int _batteryReasonCount = 0;
+    private int _signalReasonPct = 0;
+    private int _batteryReasonPct = 0;
+
+    private string BadgeText => TotalFleet > 0 ? $"{Math.Round((double)Value / TotalFleet * 100)}% انقطاع إشارة" : "0% انقطاع إشارة";
+    private string Subtext => Value > 0 ? "السبب المرجح: ضعف تغطية التردد / استنفاد الشحنة" : "جميع المحطات متصلة وتعمل بصورة طبيعية";
+    private int ProgressPercentage => TotalFleet > 0 ? (int)Math.Round((double)Value / TotalFleet * 100) : 0;
 
     protected override void OnInitialized()
     {
@@ -168,11 +178,28 @@
 
     private async Task FetchDataAsync()
     {
-        if (_modalRows == null)
+        _modalRows = await Mediator.Send(new GetActiveTrapsByGroupQuery(Status: "Inactive"));
+        ComputeBreakdown();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void ComputeBreakdown()
+    {
+        if (_modalRows == null || !_modalRows.Any())
         {
-            _modalRows = await Mediator.Send(new GetActiveTrapsByGroupQuery(Status: "Inactive"));
-            await InvokeAsync(StateHasChanged);
+            _signalReasonCount = 0;
+            _batteryReasonCount = 0;
+            _signalReasonPct = 0;
+            _batteryReasonPct = 0;
+            return;
         }
+
+        int total = _modalRows.Count;
+        _batteryReasonCount = _modalRows.Count(r => r.BatteryPercentage <= 20 || (r.DisconnectReason != null && r.DisconnectReason.Contains("بطارية")));
+        _signalReasonCount = Math.Max(0, total - _batteryReasonCount);
+
+        _batteryReasonPct = (int)Math.Round((double)_batteryReasonCount / total * 100);
+        _signalReasonPct = 100 - _batteryReasonPct;
     }
 
     private async Task OpenModalAsync(string? modalId)

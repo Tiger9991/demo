@@ -2,6 +2,7 @@
 @using Application.Features.Stats.Queries
 @using Application.Features.Traps.Queries
 @using Application.DTOs
+@using Domain.Enums
 @inject IMediator Mediator
 @inject IJSRuntime JSRuntime
 
@@ -57,7 +58,7 @@
                 </div>
                 <div>
                     <span class="text-muted d-block fs-10 fw-semibold">بؤرة النشاط الأعلى</span>
-                    <span class="fw-bold text-dark fs-12">كوبري ميدان الحجاز (3 التقاطات)</span>
+                    <span class="fw-bold text-dark fs-12">@HighActivityTrapText</span>
                 </div>
             </div>
         </div>
@@ -68,7 +69,7 @@
                 </div>
                 <div>
                     <span class="text-muted d-block fs-10 fw-semibold">جودة التغطية الجغرافية</span>
-                    <span class="fw-bold text-success fs-12">94% استقرار شبكة التردد (LoRa)</span>
+                    <span class="fw-bold text-success fs-12">@CoveragePercentage% استقرار شبكة التردد (LoRa)</span>
                 </div>
             </div>
         </div>
@@ -79,14 +80,14 @@
                 </div>
                 <div>
                     <span class="text-muted d-block fs-10 fw-semibold">تحديث المواقع اللحظي</span>
-                    <span class="fw-bold text-dark fs-12">18 نشطة • 2 مفصولة (إجمالي 20)</span>
+                    <span class="fw-bold text-dark fs-12">@ConnectedCount نشطة • @OfflineCount مفصولة (إجمالي @TotalCount)</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- LEAFLET MAP CONTAINER (Increased height by 10%: 575px) -->
-    <div id="map-container" class="rounded-3 shadow-2xs border overflow-hidden position-relative flex-grow-1" style="width:100%; height:575px; min-height:530px;"></div>
+    <!-- LEAFLET MAP CONTAINER -->
+    <div id="map-container" class="rounded-3 shadow-2xs border overflow-hidden position-relative flex-grow-1" style="width:100%; height:575px; min-height:480px;"></div>
 
 </div>
 
@@ -96,16 +97,58 @@
 
     private string _selectedGroup = "";
     private List<TrapDetailDto> _data = new();
+    private bool _isRendered = false;
 
-    protected override void OnInitialized()
+    private int TotalCount => _data?.Count ?? 0;
+    private int ConnectedCount => _data?.Count(d => d.IsConnected) ?? 0;
+    private int OfflineCount => _data?.Count(d => d.IsOffline) ?? 0;
+    private int CoveragePercentage => TotalCount > 0 ? (int)Math.Round((double)ConnectedCount / TotalCount * 100) : 0;
+    private string HighActivityTrapText
     {
-        _data = InitialData;
+        get
+        {
+            var redTrap = _data?.FirstOrDefault(d => d.IndicatorStatus == IndicatorStatus.Red);
+            if (redTrap != null)
+                return $"محطة #{redTrap.TrapNumber} (مجموعة {redTrap.GroupNumber})";
+            return "لا توجد بؤر نشاط حرجة";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (InitialData != null && InitialData.Any())
+        {
+            _data = InitialData;
+        }
+        else
+        {
+            await LoadData();
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (InitialData != null && InitialData.Any() && (_data == null || !_data.Any() || string.IsNullOrEmpty(_selectedGroup)))
+        {
+            _data = InitialData;
+            if (_isRendered)
+            {
+                await RenderMap();
+                await Task.Delay(200);
+                await FitAllPoints();
+            }
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
+            _isRendered = true;
+            if (_data == null || !_data.Any())
+            {
+                await LoadData();
+            }
             await Task.Delay(100);
             await RenderMap();
             await Task.Delay(300);
@@ -115,23 +158,31 @@
 
     private async Task LoadData()
     {
-        _data = await Mediator.Send(new GetTrapsMapDataQuery(
-            string.IsNullOrEmpty(_selectedGroup) ? null : _selectedGroup
-        ));
+        try
+        {
+            _data = await Mediator.Send(new GetTrapsMapDataQuery(
+                string.IsNullOrEmpty(_selectedGroup) ? null : _selectedGroup
+            )) ?? new();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading map data: {ex.Message}");
+            _data = new();
+        }
     }
 
     private async Task RenderMap()
     {
         try
         {
-            if (_data.Any())
+            if (_data != null && _data.Any())
                 await JSRuntime.InvokeVoidAsync("renderTrapMap", _data);
             else
-                await JSRuntime.InvokeVoidAsync("showMapMessage", "لا توجد بيانات لعرضها.");
+                await JSRuntime.InvokeVoidAsync("showMapMessage", "لا توجد بيانات لعرضها على الخريطة.");
         }
         catch (JSException ex)
         {
-            Console.WriteLine($"JS Error: {ex.Message}");
+            Console.WriteLine($"JS Error in RenderMap: {ex.Message}");
         }
     }
 
@@ -143,7 +194,7 @@
         }
         catch (JSException ex)
         {
-            Console.WriteLine($"JS Error: {ex.Message}");
+            Console.WriteLine($"JS Error in FitAllPoints: {ex.Message}");
         }
     }
 
