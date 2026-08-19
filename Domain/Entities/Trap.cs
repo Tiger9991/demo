@@ -92,6 +92,12 @@ namespace Domain.Entities
         public Trap()
         {
             Id = Guid.NewGuid();
+            // Default to Cairo, Egypt with small variation
+            var random = new Random();
+            double offsetLat = (random.NextDouble() * 0.08) - 0.04;
+            double offsetLng = (random.NextDouble() * 0.08) - 0.04;
+            Latitude = Math.Round(30.0444 + offsetLat, 6);
+            Longitude = Math.Round(31.2357 + offsetLng, 6);
         }
     }
 }

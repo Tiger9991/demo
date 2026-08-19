@@ -77,6 +77,56 @@ public sealed class CreateTrapCommandHandlerTests
         Assert.Single(await context.Traps.ToListAsync());
     }
 
+    [Fact]
+    public async Task Handle_generates_default_cairo_coordinates_when_not_provided()
+    {
+        await using var context = CreateContext();
+        var handler = new CreateTrapCommandHandler(context);
+
+        var id1 = await handler.Handle(
+            new CreateTrapCommand(TrapNumber: "1", SignalStrength: 5.0f, TrapGroup: "0"),
+            CancellationToken.None);
+
+        var id2 = await handler.Handle(
+            new CreateTrapCommand(TrapNumber: "2", SignalStrength: 5.0f, TrapGroup: "1"),
+            CancellationToken.None);
+
+        var trap1 = await context.Traps.SingleAsync(t => t.Id == id1);
+        var trap2 = await context.Traps.SingleAsync(t => t.Id == id2);
+
+        // Assert coordinates are within Cairo bounding box
+        Assert.NotNull(trap1.Latitude);
+        Assert.NotNull(trap1.Longitude);
+        Assert.InRange(trap1.Latitude.Value, 29.5, 30.5);
+        Assert.InRange(trap1.Longitude.Value, 30.8, 31.8);
+
+        Assert.NotNull(trap2.Latitude);
+        Assert.NotNull(trap2.Longitude);
+        Assert.InRange(trap2.Latitude.Value, 29.5, 30.5);
+        Assert.InRange(trap2.Longitude.Value, 30.8, 31.8);
+
+        // Different traps receive different coordinates
+        Assert.True(trap1.Latitude != trap2.Latitude || trap1.Longitude != trap2.Longitude);
+    }
+
+    [Fact]
+    public async Task Handle_uses_explicit_coordinates_when_provided()
+    {
+        await using var context = CreateContext();
+        var handler = new CreateTrapCommandHandler(context);
+
+        var explicitLat = 30.123456;
+        var explicitLng = 31.654321;
+
+        var id = await handler.Handle(
+            new CreateTrapCommand(TrapNumber: "99", SignalStrength: 5.0f, TrapGroup: "Test", Latitude: explicitLat, Longitude: explicitLng),
+            CancellationToken.None);
+
+        var trap = await context.Traps.SingleAsync(t => t.Id == id);
+        Assert.Equal(explicitLat, trap.Latitude);
+        Assert.Equal(explicitLng, trap.Longitude);
+    }
+
     private static TestApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<TestApplicationDbContext>()

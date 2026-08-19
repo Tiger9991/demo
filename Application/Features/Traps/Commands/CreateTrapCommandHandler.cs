@@ -1,3 +1,4 @@
+using Application.Common.Helpers;
 using Application.Common.Interfaces;
 using Domain.Entities;
 using Domain.Enums;
@@ -36,6 +37,12 @@ namespace Application.Features.Traps.Commands
                 existingTrap.BatteryPercentage = 100;
                 existingTrap.TotalTransmissions = 0;
 
+                if (request.Latitude.HasValue && request.Longitude.HasValue)
+                {
+                    existingTrap.Latitude = request.Latitude.Value;
+                    existingTrap.Longitude = request.Longitude.Value;
+                }
+
                 // Record bait measurement if a value was provided
                 //if (request.BaitWeightGrams.HasValue)
                 //{
@@ -56,6 +63,11 @@ namespace Application.Features.Traps.Commands
             else
             {
                 // ---- Create a new trap with default values ----
+                var (defaultLat, defaultLng) = CairoLocationHelper.GenerateDistributedCairoCoordinate(
+                    request.TrapGroup,
+                    request.TrapNumber
+                );
+
                 var newTrap = new Trap
                 {
                     Id = Guid.NewGuid(),
@@ -69,7 +81,8 @@ namespace Application.Features.Traps.Commands
                     LastEntryDate = null,
                     TotalTransmissions = 0,
                     OperatingDays = 0,
-
+                    Latitude = request.Latitude ?? defaultLat,
+                    Longitude = request.Longitude ?? defaultLng,
                 };
 
                 await _context.Traps.AddAsync(newTrap, cancellationToken);

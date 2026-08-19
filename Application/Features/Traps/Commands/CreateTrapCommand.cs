@@ -14,8 +14,9 @@ namespace Application.Features.Traps.Commands
     public record CreateTrapCommand(
      string TrapNumber,
      float SignalStrength,
-     string? TrapGroup = null
-    
+     string? TrapGroup = null,
+     double? Latitude = null,
+     double? Longitude = null
  ) : IRequest<Guid>;
 
 }
